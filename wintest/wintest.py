@@ -21,12 +21,15 @@ class wintest():
         self.setvar('HOSTNAME', self.cmd_output("hostname -s").strip())
         if os.getuid() != 0:
             raise Exception("You must run this script as root")
-        self.run_cmd('ifconfig ${INTERFACE} ${INTERFACE_NET} up')
+
+        if self.getvar('INTERFACE'):
+             self.run_cmd('ifconfig ${INTERFACE} ${INTERFACE_NET} up')
         if self.getvar('INTERFACE_IPV6'):
             self.run_cmd('ifconfig ${INTERFACE} inet6 del ${INTERFACE_IPV6}/64', checkfail=False)
             self.run_cmd('ifconfig ${INTERFACE} inet6 add ${INTERFACE_IPV6}/64 up')
 
-        self.run_cmd('ifconfig ${NAMED_INTERFACE} ${NAMED_INTERFACE_NET} up')
+        if self.getvar('NAMED_INTERFACE'):
+            self.run_cmd('ifconfig ${NAMED_INTERFACE} ${NAMED_INTERFACE_NET} up')
         if self.getvar('NAMED_INTERFACE_IPV6'):
             self.run_cmd('ifconfig ${NAMED_INTERFACE} inet6 del ${NAMED_INTERFACE_IPV6}/64', checkfail=False)
             self.run_cmd('ifconfig ${NAMED_INTERFACE} inet6 add ${NAMED_INTERFACE_IPV6}/64 up')
