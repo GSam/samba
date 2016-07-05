@@ -461,6 +461,7 @@ options {
 
         self.run_cmd("mkdir -p var/named/data")
         self.run_cmd("chown -R ${BIND_USER} var/named")
+        self.run_cmd("chown -R ${BIND_USER} ${PREFIX}/etc/named.conf")
 
         self.bind_child = self.run_child("${BIND9} -u ${BIND_USER} -n 1 -c ${PREFIX}/etc/named.conf -g")
 
