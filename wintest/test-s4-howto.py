@@ -13,11 +13,13 @@ def build_s4(t):
     t.info('Building s4')
     t.chdir('${SOURCETREE}')
     t.putenv('CC', 'ccache gcc')
-    t.run_cmd('make reconfigure || ./configure --enable-auto-reconfigure --enable-developer --prefix=${PREFIX} -C')
+    if not t.skip('configure'):
+        t.run_cmd('make reconfigure || ./configure --enable-auto-reconfigure --enable-developer --prefix=${PREFIX} -C')
     t.run_cmd('make -j')
     t.run_cmd('rm -rf ${PREFIX}')
     t.run_cmd('make -j install')
-
+    # We need to run smbclient4, so we need in-tree binaries
+    t.run_cmd('make -j')
 
 def provision_s4(t, func_level="2008"):
     '''provision s4 as a DC'''
@@ -561,7 +563,8 @@ def test_howto(t):
     '''test the Samba4 howto'''
 
     t.setvar("SAMBA_VERSION", "Version 4")
-    t.setvar("smbclient", "bin/smbclient4")
+    t.setvar("smbclient", t.substitute("${SOURCETREE}") + "/bin/smbclient4")
+
     t.check_prerequesites()
 
     # we don't need fsync safety in these tests
