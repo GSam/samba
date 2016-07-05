@@ -457,12 +457,13 @@ options {
         self.info("Restarting bind9")
         self.chdir('${PREFIX}')
 
-        self.set_nameserver(self.getvar('NAMED_INTERFACE_IP'))
+        # self.set_nameserver(self.getvar('NAMED_INTERFACE_IP'))
 
         self.run_cmd("mkdir -p var/named/data")
         self.run_cmd("chown -R ${BIND_USER} var/named")
         self.run_cmd("chown -R ${BIND_USER} ${PREFIX}/etc/named.conf")
 
+        # TODO Stop apparmor
         self.bind_child = self.run_child("${BIND9} -u ${BIND_USER} -n 1 -c ${PREFIX}/etc/named.conf -g")
 
         self.port_wait("${NAMED_INTERFACE_IP}", 53)
@@ -1001,4 +1002,5 @@ RebootOnCompletion=No
 
         self.setvar('NAMESERVER_BACKEND', self.opts.dns_backend)
 
-        self.setvar('DNS_FORWARDER', "--option=dns forwarder=%s" % nameserver)
+        # THIS NAME SERVER SHOULD BE BIND
+        self.setvar('DNS_FORWARDER', "--option=dns forwarder=%s" % "${NAMED_INTERFACE_IP}")

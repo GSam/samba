@@ -41,7 +41,7 @@ def provision_s4(t, func_level="2008"):
                '--option=bind interfaces only=yes',
                '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf',
                '--dns-backend=${NAMESERVER_BACKEND}',
-               '${DNS_FORWARDER}']
+               '--option=dns forwarder=${NAMED_INTERFACE_IP}']
     if t.getvar('USE_NTVFS'):
         provision.append('${USE_NTVFS}')
 
@@ -61,6 +61,10 @@ def start_s4(t):
     t.run_cmd(['sbin/samba',
              '--option', 'panic action=gnome-terminal -e "gdb --pid %d"', '--option', 'max protocol=nt1'])
     t.port_wait("${INTERFACE_IP}", 139)
+
+    # Set the nameserver as Samba
+    t.set_nameserver("${INTERFACE_IP}")
+
 
 def test_smbclient(t):
     '''test smbclient against localhost'''
