@@ -29,7 +29,7 @@ class wintest():
              self.run_cmd('ifconfig ${INTERFACE} ${INTERFACE_NET} up')
         else:
             # GRAB OUR EXISTING IP
-            ip = self.run_cmd("/sbin/ifconfig ${INTERFACE} | grep 'inet addr:' | cut -d: -f2 | awk '{print $1}'", output=True)
+            ip = self.run_cmd("/sbin/ifconfig ${INTERFACE} | grep 'inet addr:' | cut -d: -f2 | awk '{print $1}'", output=True).strip()
             self.setvar('INTERFACE_IP', ip)
 
         if self.getvar('INTERFACE_IPV6'):
