@@ -6,6 +6,9 @@ import pexpect, subprocess
 import optparse
 import sys, os, time, re
 
+def get_ip(iface = 'eth0'):
+    return output
+
 class wintest():
     '''testing of Samba against windows VMs'''
 
@@ -22,8 +25,13 @@ class wintest():
         if os.getuid() != 0:
             raise Exception("You must run this script as root")
 
-        if self.getvar('INTERFACE'):
+        if self.getvar('INTERFACE') and self.getvar('INTERFACE_IP'):
              self.run_cmd('ifconfig ${INTERFACE} ${INTERFACE_NET} up')
+        else:
+            # GRAB OUR EXISTING IP
+            ip = self.run_cmd("/sbin/ifconfig ${INTERFACE} | grep 'inet addr:' | cut -d: -f2 | awk '{print $1}'", output=True)
+            self.setvar('INTERFACE_IP', ip)
+
         if self.getvar('INTERFACE_IPV6'):
             self.run_cmd('ifconfig ${INTERFACE} inet6 del ${INTERFACE_IPV6}/64', checkfail=False)
             self.run_cmd('ifconfig ${INTERFACE} inet6 add ${INTERFACE_IPV6}/64 up')
