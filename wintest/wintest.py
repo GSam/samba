@@ -635,7 +635,7 @@ options {
             child.expect("C:")
 
     def set_dns(self, child):
-        child.sendline('netsh interface ip set dns "${WIN_NIC}" static ${NAMED_INTERFACE_IP} primary')
+        child.sendline('netsh interface ip set dns "${WIN_NIC}" static ${INTERFACE_IP} primary')
         i = child.expect(['C:', pexpect.EOF, pexpect.TIMEOUT], timeout=5)
         if i > 0:
             return True
