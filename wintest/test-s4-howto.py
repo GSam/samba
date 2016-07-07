@@ -469,6 +469,7 @@ def test_dcpromo_rodc(t, vm):
 
 def prep_join_as_dc(t, vm):
     '''start VM and shutdown Samba in preperation to join a windows domain as a DC'''
+    t.setwinvars(vm)
     t.info("Starting VMs for joining ${WIN_VM} as a second DC using samba-tool domain join DC")
     t.chdir('${PREFIX}')
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
