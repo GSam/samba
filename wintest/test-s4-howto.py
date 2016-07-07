@@ -475,7 +475,7 @@ def prep_join_as_dc(t, vm):
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
     if not t.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
         t.rndc_cmd('flush')
-    t.run_cmd("rm -rf etc/smb.conf private")
+    t.run_cmd("rm -rf etc/smb.conf private/*")
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
 

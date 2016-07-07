@@ -97,6 +97,10 @@ static void cleanup_tmp_files(struct loadparm_context *lp_ctx)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	path = smbd_tmp_path(mem_ctx, lp_ctx, NULL);
+	if (path == NULL) {
+		talloc_free(mem_ctx);
+		return;
+	}
 
 	recursive_delete(path);
 	talloc_free(mem_ctx);
