@@ -701,9 +701,6 @@ def test_howto(t):
     if t.have_vm('W2K8R2A') and not t.skip("join_w2k8r2"):
         enabled_VMs.append('W2K8R2A')
         t.start_winvm("W2K8R2A")
-    if t.have_vm('W2K8R2A') and not t.skip("join_rodc"):
-        enabled_VMs.append('W2K8R2A-2')
-        t.start_winvm("W2K8R2A-2")
     if t.have_vm('W2K3A') and not t.skip("join_w2k3"):
         enabled_VMs.append('W2K3A')
         t.start_winvm("W2K3A")
@@ -769,14 +766,16 @@ def test_howto(t):
         test_dyndns(t)
         test_join_as_dc(t, "W2K8R2A")
 
-    if 'W2K8R2A-2' in enabled_VMs:
-        prep_join_as_dc(t, "W2K8R2A-2")
-        t.run_dcpromo_as_first_dc("W2K8R2A-2", func_level='2008r2')
-        join_as_rodc(t, "W2K8R2A-2")
+    if t.have_vm('W2K8R2A') and not t.skip("join_rodc"):
+        t.vm_poweroff("W2K8R2A")
+        t.start_winvm("W2K8R2A")
+        prep_join_as_dc(t, "W2K8R2A")
+        t.run_dcpromo_as_first_dc("W2K8R2A", func_level='2008r2')
+        join_as_rodc(t, "W2K8R2A")
         create_shares(t)
         start_s4(t)
         test_dyndns(t)
-        test_join_as_rodc(t, "W2K8R2A-2")
+        test_join_as_rodc(t, "W2K8R2A")
 
     if 'W2K3A' in enabled_VMs:
         prep_join_as_dc(t, "W2K3A")
