@@ -619,6 +619,7 @@ def test_howto(t):
 
     if t.have_vm('WINXP') and not t.skip("winxp"):
         t.start_winvm("WINXP")
+        t.test_remote_smbclient("WINXP")
         run_winjoin(t, "WINXP")
         test_winjoin(t, "WINXP")
         t.test_remote_smbclient("WINXP", "administrator", "${PASSWORD1}")
