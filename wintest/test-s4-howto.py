@@ -674,50 +674,78 @@ def test_howto(t):
     if not t.skip("dyndns"):
         test_dyndns(t)
 
+    # Setup VMs all at once to save a lot of time
+    enabled_VMs = []
+
     if t.have_vm('WINDOWS7') and not t.skip("windows7"):
+        enabled_VMs.append('WINDOWS7')
         t.start_winvm("WINDOWS7")
+    if t.have_vm('WINXP') and not t.skip("winxp"):
+        enabled_VMs.append('WINXP')
+        t.start_winvm("WINXP")
+    if t.have_vm('W2K3C') and not t.skip("win2k3_member"):
+        enabled_VMs.append('W2K3C')
+        t.start_winvm("W2K3C")
+    if t.have_vm('W2K8R2C') and not t.skip("dcpromo_rodc"):
+        enabled_VMs.append('W2K8R2C')
+        t.start_winvm("W2K8R2C")
+    if t.have_vm('W2K8R2B') and not t.skip("dcpromo_w2k8r2"):
+        enabled_VMs.append('W2K8R2B')
+        t.start_winvm("W2K8R2B")
+    if t.have_vm('W2K8B') and not t.skip("dcpromo_w2k8"):
+        enabled_VMs.append('W2K8B')
+        t.start_winvm("W2K8B")
+    if t.have_vm('W2K3B') and not t.skip("dcpromo_w2k3"):
+        enabled_VMs.append('W2K3B')
+        t.start_winvm('W2K3B')
+    if t.have_vm('W2K8R2A') and not t.skip("join_w2k8r2"):
+        enabled_VMs.append('W2K8R2A')
+        t.start_winvm("W2K8R2A")
+    if t.have_vm('W2K8R2A') and not t.skip("join_rodc"):
+        enabled_VMs.append('W2K8R2A-2')
+        t.start_winvm("W2K8R2A-2")
+    if t.have_vm('W2K3A') and not t.skip("join_w2k3"):
+        enabled_VMs.append('W2K3A')
+        t.start_winvm("W2K3A")
+
+    if 'WINDOWS7' in enabled_VMs:
         t.test_remote_smbclient("WINDOWS7")
         run_winjoin(t, "WINDOWS7")
         test_winjoin(t, "WINDOWS7")
         t.vm_poweroff("${WIN_VM}")
 
-    if t.have_vm('WINXP') and not t.skip("winxp"):
-        t.start_winvm("WINXP")
+    if 'WINXP' in enabled_VMs:
         t.test_remote_smbclient("WINXP")
         run_winjoin(t, "WINXP")
         test_winjoin(t, "WINXP")
         t.test_remote_smbclient("WINXP", "administrator", "${PASSWORD1}")
         t.vm_poweroff("${WIN_VM}")
 
-    if t.have_vm('W2K3C') and not t.skip("win2k3_member"):
-        t.start_winvm("W2K3C")
+    if 'W2K3C' in enabled_VMs:
         run_winjoin(t, "W2K3C")
         test_winjoin(t, "W2K3C")
         t.test_remote_smbclient("W2K3C", "administrator", "${PASSWORD1}")
         t.vm_poweroff("${WIN_VM}")
 
-    if t.have_vm('W2K8R2C') and not t.skip("dcpromo_rodc"):
+    if 'W2K8R2C' in enabled_VMs:
         t.info("Testing w2k8r2 RODC dcpromo")
-        t.start_winvm("W2K8R2C")
         t.test_remote_smbclient('W2K8R2C')
         run_dcpromo_rodc(t, "W2K8R2C")
         test_dcpromo_rodc(t, "W2K8R2C")
 
-    if t.have_vm('W2K8R2B') and not t.skip("dcpromo_w2k8r2"):
+    if 'W2K8R2B' in enabled_VMs:
         t.info("Testing w2k8r2 dcpromo")
-        t.start_winvm("W2K8R2B")
         t.test_remote_smbclient('W2K8R2B')
         run_dcpromo(t, "W2K8R2B")
         test_dcpromo(t, "W2K8R2B")
 
-    if t.have_vm('W2K8B') and not t.skip("dcpromo_w2k8"):
+    if 'W2K8B' in enabled_VMs:
         t.info("Testing w2k8 dcpromo")
-        t.start_winvm("W2K8B")
         t.test_remote_smbclient('W2K8B')
         run_dcpromo(t, "W2K8B")
         test_dcpromo(t, "W2K8B")
 
-    if t.have_vm('W2K3B') and not t.skip("dcpromo_w2k3"):
+    if 'W2K3B' in enabled_VMs:
         t.info("Testing w2k3 dcpromo")
         t.info("Changing to 2003 functional level")
         provision_s4(t, func_level='2003')
@@ -728,13 +756,11 @@ def test_howto(t):
         test_dns(t)
         test_kerberos(t)
         test_dyndns(t)
-        t.start_winvm("W2K3B")
         t.test_remote_smbclient('W2K3B')
         run_dcpromo(t, "W2K3B")
         test_dcpromo(t, "W2K3B")
 
-    if t.have_vm('W2K8R2A') and not t.skip("join_w2k8r2"):
-        t.start_winvm("W2K8R2A")
+    if 'W2K8R2A' in enabled_VMs:
         prep_join_as_dc(t, "W2K8R2A")
         t.run_dcpromo_as_first_dc("W2K8R2A", func_level='2008r2')
         join_as_dc(t, "W2K8R2A")
@@ -743,18 +769,16 @@ def test_howto(t):
         test_dyndns(t)
         test_join_as_dc(t, "W2K8R2A")
 
-    if t.have_vm('W2K8R2A') and not t.skip("join_rodc"):
-        t.start_winvm("W2K8R2A")
-        prep_join_as_dc(t, "W2K8R2A")
-        t.run_dcpromo_as_first_dc("W2K8R2A", func_level='2008r2')
-        join_as_rodc(t, "W2K8R2A")
+    if 'W2K8R2A-2' in enabled_VMs:
+        prep_join_as_dc(t, "W2K8R2A-2")
+        t.run_dcpromo_as_first_dc("W2K8R2A-2", func_level='2008r2')
+        join_as_rodc(t, "W2K8R2A-2")
         create_shares(t)
         start_s4(t)
         test_dyndns(t)
-        test_join_as_rodc(t, "W2K8R2A")
+        test_join_as_rodc(t, "W2K8R2A-2")
 
-    if t.have_vm('W2K3A') and not t.skip("join_w2k3"):
-        t.start_winvm("W2K3A")
+    if 'W2K3A' in enabled_VMs:
         prep_join_as_dc(t, "W2K3A")
         t.run_dcpromo_as_first_dc("W2K3A", func_level='2003')
         join_as_dc(t, "W2K3A")
