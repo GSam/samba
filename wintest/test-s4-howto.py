@@ -174,6 +174,7 @@ DatabasePath="C:\Windows\NTDS"
 LogPath="C:\Windows\NTDS"
 SYSVOLPath="C:\Windows\SYSVOL"
 SafeModeAdminPassword=${PASSWORD1}
+DomainLevel=3
 
 ''')
     child.expect("copied.")
@@ -333,6 +334,7 @@ LogPath="C:\Windows\NTDS"
 SYSVOLPath="C:\Windows\SYSVOL"
 SafeModeAdminPassword=${PASSWORD1}
 RebootOnCompletion=No
+DomainLevel=3
 
 ''')
     child.expect("copied.")
