@@ -177,10 +177,41 @@ SafeModeAdminPassword=${PASSWORD1}
 DomainLevel=3
 
 ''')
+
     child.expect("copied.")
     child.expect("C:")
     child.expect("C:")
-    child.sendline("dcpromo /answer:answers.txt")
+
+    child.sendline("copy /Y con powershell-answers.ps1")
+    child.sendline('''
+#
+# Windows PowerShell script for AD DS Deployment
+#
+netsh interface ip set dns "Ethernet" static 10.56.240.106 primary
+
+$secpasswd = ConvertTo-SecureString "p@ssw0rd" -AsPlainText -Force
+$mycreds = New-Object System.Management.Automation.PSCredential ("S4-HOWTO\Administrator", $secpasswd)
+
+Import-Module ADDSDeployment
+Install-ADDSDomainController `
+-NoGlobalCatalog:$false `
+-Credential $mycreds `
+-CriticalReplicationOnly:$false `
+-DatabasePath "C:\Windows\NTDS" `
+-DomainName "s4.howto.abartlet.net" `
+-InstallDns:$false `
+-LogPath "C:\Windows\NTDS" `
+-NoRebootOnCompletion:$false `
+-SiteName "Default-First-Site-Name" `
+-SysvolPath "C:\Windows\SYSVOL" `
+-SafeModeAdministratorPassword $secpasswd `
+-Force:$true
+''')
+    child.expect("copied.")
+    child.expect("C:")
+    child.expect("C:")
+    #child.sendline("dcpromo /answer:answers.txt")
+    child.sendline("powershell -File powershell-answers.ps1")
     i = child.expect(["You must restart this computer", "failed", "Active Directory Domain Services was not installed", "C:"], timeout=240)
     if i == 1 or i == 2:
         child.sendline("echo off")
@@ -338,7 +369,40 @@ DomainLevel=3
 
 ''')
     child.expect("copied.")
-    child.sendline("dcpromo /answer:answers.txt")
+
+    child.sendline("copy /Y con powershell-answers.ps1")
+    child.sendline('''
+#
+# Windows PowerShell script for AD DS Deployment
+#
+netsh interface ip set dns "Ethernet" static 10.56.240.106 primary
+
+$secpasswd = ConvertTo-SecureString "p@ssw0rd" -AsPlainText -Force
+$mycreds = New-Object System.Management.Automation.PSCredential ("S4-HOWTO\Administrator", $secpasswd)
+
+Import-Module ADDSDeployment
+Install-ADDSDomainController `
+-AllowPasswordReplicationAccountName @("S4-HOWTO\Allowed RODC Password Replication Group") `
+-NoGlobalCatalog:$false `
+-Credential $mycreds `
+-CriticalReplicationOnly:$false `
+-DatabasePath "C:\Windows\NTDS" `
+-DelegatedAdministratorAccountName "S4-HOWTO\Administrator" `
+-DenyPasswordReplicationAccountName @("BUILTIN\Administrators", "BUILTIN\Server Operators", "BUILTIN\Backup Operators", "BUILTIN\Account Operators", "S4-HOWTO\Denied RODC Password Replication Group") `
+-DomainName "s4.howto.abartlet.net" `
+-InstallDns:$false `
+-LogPath "C:\Windows\NTDS" `
+-NoRebootOnCompletion:$false `
+-ReadOnlyReplica:$true `
+-SiteName "Default-First-Site-Name" `
+-SysvolPath "C:\Windows\SYSVOL" `
+-SafeModeAdministratorPassword $secpasswd `
+-Force:$true
+''')
+    child.expect("copied.")
+    child.expect("C:")
+    child.expect("C:")
+    child.sendline("powershell -File powershell-answers.ps1")
     i = child.expect(["You must restart this computer", "failed", "could not be located in this domain"], timeout=120)
     if i != 0:
         child.sendline("echo off")
