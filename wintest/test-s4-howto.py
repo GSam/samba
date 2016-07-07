@@ -308,8 +308,6 @@ def run_dcpromo_rodc(t, vm):
     '''run a RODC dcpromo to join a windows DC to the samba domain'''
     t.setwinvars(vm)
     t.info("Joining a w2k8 box to the domain as a RODC")
-    t.vm_poweroff("${WIN_VM}", checkfail=False)
-    t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
     child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True)
     child.sendline("copy /Y con answers.txt")
     child.sendline('''
