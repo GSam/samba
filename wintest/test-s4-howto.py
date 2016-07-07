@@ -206,7 +206,8 @@ Install-ADDSDomainController `
 -SysvolPath "C:\Windows\SYSVOL" `
 -SafeModeAdministratorPassword $secpasswd `
 -Force:$true
-''')
+
+''')
     child.expect("copied.")
     child.expect("C:")
     child.expect("C:")
@@ -398,7 +399,8 @@ Install-ADDSDomainController `
 -SysvolPath "C:\Windows\SYSVOL" `
 -SafeModeAdministratorPassword $secpasswd `
 -Force:$true
-''')
+
+''')
     child.expect("copied.")
     child.expect("C:")
     child.expect("C:")
