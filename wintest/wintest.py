@@ -21,7 +21,7 @@ class wintest():
 
     def check_prerequesites(self):
         self.info("Checking prerequesites")
-        self.setvar('HOSTNAME', self.cmd_output("hostname -s").strip())
+        self.setvar('HOSTNAME', self.cmd_output("hostname -s").strip()[:10])
         if os.getuid() != 0:
             raise Exception("You must run this script as root")
 
