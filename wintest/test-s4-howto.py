@@ -643,6 +643,9 @@ def test_howto(t):
     # we don't need fsync safety in these tests
     t.putenv('TDB_NO_FSYNC', '1')
 
+    if not t.skip("stop_vms"):
+        t.stop_vms()
+
     # Setup VMs all at once to save a lot of time
     enabled_VMs = []
 
@@ -678,9 +681,6 @@ def test_howto(t):
         t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
     if not t.skip("stop_bind"):
         t.stop_bind()
-
-    if not t.skip("stop_vms"):
-        t.stop_vms()
 
     if not t.skip("build"):
         build_s4(t)
