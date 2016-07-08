@@ -1021,3 +1021,6 @@ RebootOnCompletion=No
 
         # THIS NAME SERVER SHOULD BE BIND
         self.setvar('DNS_FORWARDER', "--option=dns forwarder=%s" % "${NAMED_INTERFACE_IP}")
+
+        if self.opts.ident:
+            self.ident = self.opts.ident
