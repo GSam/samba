@@ -41,7 +41,8 @@ def provision_s4(t, func_level="2008"):
                '--option=bind interfaces only=yes',
                '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf',
                '--dns-backend=${NAMESERVER_BACKEND}',
-               '--option=dns forwarder=${NAMED_INTERFACE_IP}']
+               '--option=dns forwarder=${NAMED_INTERFACE_IP}',
+               '--host-name=samba_primary']
     if t.getvar('USE_NTVFS'):
         provision.append('${USE_NTVFS}')
 
