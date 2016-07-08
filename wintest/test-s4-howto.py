@@ -41,7 +41,8 @@ def provision_s4(t, func_level="2008"):
                '--option=bind interfaces only=yes',
                '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf',
                '--dns-backend=${NAMESERVER_BACKEND}',
-               '--option=dns forwarder=${NAMED_INTERFACE_IP}']
+               '--option=dns forwarder=${NAMED_INTERFACE_IP}',
+               '--host-name=${HOSTNAME}']
     if t.getvar('USE_NTVFS'):
         provision.append('${USE_NTVFS}')
 
@@ -489,7 +490,7 @@ def join_as_dc(t, vm):
     t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
 
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
-    t.run_cmd('bin/samba-tool domain join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE} --option="netbios name = samba"')
+    t.run_cmd('bin/samba-tool domain join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE} --option="netbios name = ${HOSTNAME}"')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
 
