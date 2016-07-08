@@ -63,7 +63,7 @@ def start_s4(t):
     t.port_wait("${INTERFACE_IP}", 139)
 
     # Set the nameserver as Samba
-    t.set_nameserver("${INTERFACE_IP}")
+    t.set_nameserver("${INTERFACE_IP}\nnameserver ${NAMED_INTERFACE_IP}")
 
 
 def test_smbclient(t):
