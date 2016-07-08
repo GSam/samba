@@ -12,12 +12,13 @@ def get_ip(iface = 'eth0'):
 class wintest():
     '''testing of Samba against windows VMs'''
 
-    def __init__(self):
+    def __init__(self, ident=''):
         self.vars = {}
         self.list_mode = False
         self.vms = None
         os.environ['PYTHONUNBUFFERED'] = '1'
         self.parser = optparse.OptionParser("wintest")
+        self.ident = ident
 
     def check_prerequesites(self):
         self.info("Checking prerequesites")
@@ -75,6 +76,9 @@ class wintest():
             self.setvar("WIN_BASEDN", "DC=" + dnsdomain.replace(".", ",DC="))
         if self.getvar("WIN_USER") is None:
             self.setvar("WIN_USER", "administrator")
+
+        if self.getvar("WIN_VM"):
+            self.setvar("WIN_VM", self.getvar("WIN_VM") + self.ident)
 
     def info(self, msg):
         '''print some information'''
@@ -968,6 +972,7 @@ RebootOnCompletion=No
                  "BIND9_DLZ uses samba4 AD to store zone information, " \
                  "NONE skips the DNS setup entirely (not recommended)",
             default="SAMBA_INTERNAL")
+        self.parser.add_option("--ident", type='string', default='', help='unique identifier to use')
 
         self.opts, self.args = self.parser.parse_args()
 
