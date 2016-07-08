@@ -804,6 +804,9 @@ options {
                 base = v[:-6]
                 if base + '_IP' in self.vars:
                     ret[self.vars[base + '_REALM']] = self.vars[base + '_IP']
+                else:
+                    ip = self.run_cmd("${VM_GET_IP}", checkfail=checkfail, output=True).strip()
+                    ret[self.vars[base + '_REALM']] = ip
         return ret
 
     def wait_reboot(self, retries=3):

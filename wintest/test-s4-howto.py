@@ -643,6 +643,37 @@ def test_howto(t):
     # we don't need fsync safety in these tests
     t.putenv('TDB_NO_FSYNC', '1')
 
+    # Setup VMs all at once to save a lot of time
+    enabled_VMs = []
+
+    if t.have_vm('WINDOWS7') and not t.skip("windows7"):
+        enabled_VMs.append('WINDOWS7')
+        t.start_winvm("WINDOWS7")
+    if t.have_vm('WINXP') and not t.skip("winxp"):
+        enabled_VMs.append('WINXP')
+        t.start_winvm("WINXP")
+    if t.have_vm('W2K3C') and not t.skip("win2k3_member"):
+        enabled_VMs.append('W2K3C')
+        t.start_winvm("W2K3C")
+    if t.have_vm('W2K8R2C') and not t.skip("dcpromo_rodc"):
+        enabled_VMs.append('W2K8R2C')
+        t.start_winvm("W2K8R2C")
+    if t.have_vm('W2K8R2B') and not t.skip("dcpromo_w2k8r2"):
+        enabled_VMs.append('W2K8R2B')
+        t.start_winvm("W2K8R2B")
+    if t.have_vm('W2K8B') and not t.skip("dcpromo_w2k8"):
+        enabled_VMs.append('W2K8B')
+        t.start_winvm("W2K8B")
+    if t.have_vm('W2K3B') and not t.skip("dcpromo_w2k3"):
+        enabled_VMs.append('W2K3B')
+        t.start_winvm('W2K3B')
+    if t.have_vm('W2K8R2A') and not t.skip("join_w2k8r2"):
+        enabled_VMs.append('W2K8R2A')
+        t.start_winvm("W2K8R2A")
+    if t.have_vm('W2K3A') and not t.skip("join_w2k3"):
+        enabled_VMs.append('W2K3A')
+        t.start_winvm("W2K3A")
+
     if not t.skip("configure_bind"):
         t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
     if not t.skip("stop_bind"):
@@ -678,37 +709,6 @@ def test_howto(t):
         test_kerberos(t)
     if not t.skip("dyndns"):
         test_dyndns(t)
-
-    # Setup VMs all at once to save a lot of time
-    enabled_VMs = []
-
-    if t.have_vm('WINDOWS7') and not t.skip("windows7"):
-        enabled_VMs.append('WINDOWS7')
-        t.start_winvm("WINDOWS7")
-    if t.have_vm('WINXP') and not t.skip("winxp"):
-        enabled_VMs.append('WINXP')
-        t.start_winvm("WINXP")
-    if t.have_vm('W2K3C') and not t.skip("win2k3_member"):
-        enabled_VMs.append('W2K3C')
-        t.start_winvm("W2K3C")
-    if t.have_vm('W2K8R2C') and not t.skip("dcpromo_rodc"):
-        enabled_VMs.append('W2K8R2C')
-        t.start_winvm("W2K8R2C")
-    if t.have_vm('W2K8R2B') and not t.skip("dcpromo_w2k8r2"):
-        enabled_VMs.append('W2K8R2B')
-        t.start_winvm("W2K8R2B")
-    if t.have_vm('W2K8B') and not t.skip("dcpromo_w2k8"):
-        enabled_VMs.append('W2K8B')
-        t.start_winvm("W2K8B")
-    if t.have_vm('W2K3B') and not t.skip("dcpromo_w2k3"):
-        enabled_VMs.append('W2K3B')
-        t.start_winvm('W2K3B')
-    if t.have_vm('W2K8R2A') and not t.skip("join_w2k8r2"):
-        enabled_VMs.append('W2K8R2A')
-        t.start_winvm("W2K8R2A")
-    if t.have_vm('W2K3A') and not t.skip("join_w2k3"):
-        enabled_VMs.append('W2K3A')
-        t.start_winvm("W2K3A")
 
     if 'WINDOWS7' in enabled_VMs:
         t.test_remote_smbclient("WINDOWS7")
