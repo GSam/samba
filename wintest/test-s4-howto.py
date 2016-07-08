@@ -484,6 +484,7 @@ def prep_join_as_dc(t, vm):
     dns_lookup_kdc = true
 """)
 
+    child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
 
 def join_as_dc(t, vm):
