@@ -477,7 +477,13 @@ def prep_join_as_dc(t, vm):
     if not t.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
         t.rndc_cmd('flush')
     t.run_cmd("rm -rf etc/smb.conf private/*")
-    child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
+    t.write_file("/etc/krb5.conf", """
+[libdefaults]
+    default_realm = ${WIN_REALM}
+    dns_lookup_realm = false
+    dns_lookup_kdc = true
+""")
+
     t.get_ipconfig(child)
 
 def join_as_dc(t, vm):
