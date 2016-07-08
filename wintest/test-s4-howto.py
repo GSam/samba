@@ -483,6 +483,8 @@ def join_as_dc(t, vm):
     '''join a windows domain as a DC'''
     t.setwinvars(vm)
     t.info("Joining ${WIN_VM} as a second DC using samba-tool domain join DC")
+    if t.getvar("WIN_IP") is None:
+        t.setvar("WIN_IP", t.getvar("WIN_IPV4_ADDRESS"))
     t.port_wait("${WIN_IP}", 389)
     t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
 
