@@ -811,6 +811,10 @@ options {
                 else:
                     self.setvar("VMNAME", self.getvar(base + "_HOSTNAME"))
                     ip = self.run_cmd("${VM_GET_IP}", checkfail=True, output=True).strip()
+                    # check IP is in correct form
+                    if len(ip.split('.')) != 4:
+                        continue
+
                     ret[self.vars[base + '_REALM']] = ip
         return ret
 
