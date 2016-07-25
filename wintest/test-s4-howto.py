@@ -499,7 +499,7 @@ def join_as_dc(t, vm):
     import time
     time.sleep(240)
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
-    t.run_cmd('bin/samba-tool domain join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE} --option="netbios name = ${HOSTNAME}" --option="bind interfaces only = yes"')
+    t.run_cmd('bin/samba-tool domain join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE} --option="netbios name = ${HOSTNAME}" --option="bind interfaces only = yes" --option="dns forwarder=${NAMED_INTERFACE_IP}"')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
 
