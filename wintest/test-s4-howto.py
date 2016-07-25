@@ -573,6 +573,9 @@ def join_as_rodc(t, vm):
     '''join a windows domain as a RODC'''
     t.setwinvars(vm)
     t.info("Joining ${WIN_VM} as a RODC using samba-tool domain join DC")
+    if t.getvar("WIN_IP") is None:
+        t.setvar("WIN_IP", t.getvar("WIN_IPV4_ADDRESS"))
+
     t.port_wait("${WIN_IP}", 389)
     t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
