@@ -77,6 +77,9 @@ class wintest():
         if self.getvar("WIN_USER") is None:
             self.setvar("WIN_USER", "administrator")
 
+        if self.getvar("WIN_VM"):
+            self.setvar("WIN_VM", self.getvar("WIN_VM") + self.ident)
+
 
     def info(self, msg):
         '''print some information'''
