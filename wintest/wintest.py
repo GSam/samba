@@ -79,6 +79,9 @@ class wintest():
 
         if self.getvar("WIN_VM"):
             self.setvar("WIN_VM", self.getvar("WIN_VM") + self.ident)
+        if self.getvar("WIN_HOSTNAME"):
+            self.setvar("WIN_HOSTNAME", self.getvar("WIN_HOSTNAME") + self.ident)
+
 
 
     def info(self, msg):
