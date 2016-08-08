@@ -188,9 +188,9 @@ DomainLevel=3
 #
 # Windows PowerShell script for AD DS Deployment
 #
-netsh interface ip set dns "Ethernet" static {WIN_IP} primary
+netsh interface ip set dns "Ethernet" static ${INTERFACE_IP} primary
 
-$secpasswd = ConvertTo-SecureString "{PASSWORD1}" -AsPlainText -Force
+$secpasswd = ConvertTo-SecureString "${PASSWORD1}" -AsPlainText -Force
 $mycreds = New-Object System.Management.Automation.PSCredential ("S4-HOWTO\Administrator", ${PASSWORD1})
 
 Import-Module ADDSDeployment
@@ -377,9 +377,9 @@ DomainLevel=3
 #
 # Windows PowerShell script for AD DS Deployment
 #
-netsh interface ip set dns "Ethernet" static 10.56.240.106 primary
+netsh interface ip set dns "Ethernet" static ${INTERFACE_IP} primary
 
-$secpasswd = ConvertTo-SecureString "p@ssw0rd" -AsPlainText -Force
+$secpasswd = ConvertTo-SecureString "${PASSWORD1}" -AsPlainText -Force
 $mycreds = New-Object System.Management.Automation.PSCredential ("S4-HOWTO\Administrator", $secpasswd)
 
 Import-Module ADDSDeployment
