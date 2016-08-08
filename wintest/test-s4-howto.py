@@ -184,14 +184,14 @@ DomainLevel=3
     child.expect("C:")
 
     child.sendline("copy /Y con powershell-answers.ps1")
-    child.sendline('''
+    child.sendline("%s" % t.substitute('''
 #
 # Windows PowerShell script for AD DS Deployment
 #
-netsh interface ip set dns "Ethernet" static 10.56.240.106 primary
+netsh interface ip set dns "Ethernet" static {WIN_IP} primary
 
-$secpasswd = ConvertTo-SecureString "p@ssw0rd" -AsPlainText -Force
-$mycreds = New-Object System.Management.Automation.PSCredential ("S4-HOWTO\Administrator", $secpasswd)
+$secpasswd = ConvertTo-SecureString "{PASSWORD1}" -AsPlainText -Force
+$mycreds = New-Object System.Management.Automation.PSCredential ("S4-HOWTO\Administrator", ${PASSWORD1})
 
 Import-Module ADDSDeployment
 Install-ADDSDomainController `
@@ -208,7 +208,7 @@ Install-ADDSDomainController `
 -SafeModeAdministratorPassword $secpasswd `
 -Force:$true
 
-''')
+'''))
     child.expect("copied.")
     child.expect("C:")
     child.expect("C:")

@@ -75,7 +75,7 @@ class wintest():
             dnsdomain = self.getvar("WIN_REALM")
             self.setvar("WIN_BASEDN", "DC=" + dnsdomain.replace(".", ",DC="))
         if self.getvar("WIN_USER") is None:
-            self.setvar("WIN_USER", "administrator")
+            self.setvar("WIN_USER", "administrator") 
 
         if self.getvar("WIN_VM"):
             self.setvar("WIN_VM", self.getvar("WIN_VM") + self.ident)
