@@ -230,7 +230,8 @@ def __transform_entry(entry, objectClass):
             l[1] = __convert_bitfield(key, l[1])
 
         if key == "omobjectclass":
-            l[1] = oMObjectClassBER[l[1].strip()]
+            if not l[1].startswith(':'):
+                l[1] = oMObjectClassBER[l[1].strip()]
 
         if isinstance(l[1], str):
             l[1] = fix_dn(l[1])

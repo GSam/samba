@@ -84,8 +84,10 @@ class Schema(object):
             self.ldb.set_invocation_id(invocationid)
 
         self.schema_data = read_ms_schema(
-            setup_path('ad-schema/MS-AD_Schema_2K8_R2_Attributes.txt'),
-            setup_path('ad-schema/MS-AD_Schema_2K8_R2_Classes.txt'))
+#            setup_path('ad-schema/MS-AD_Schema_2K8_R2_Attributes.txt'),
+#           setup_path('ad-schema/MS-AD_Schema_2K8_R2_Classes.txt'), 
+            setup_path('ad-schema/Attributes_for_AD_LDS__Windows_Server_2012.ldf'),
+            setup_path('ad-schema/Classes_for_AD_DS__Windows_Server_2012.ldf'))
 
         if files is not None:
             for file in files:
