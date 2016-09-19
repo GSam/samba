@@ -245,11 +245,17 @@ def __transform_entry(entry, objectClass):
     entry.insert(2, ["adminDescription", cn])
     entry.insert(2, ["adminDisplayName", cn])
 
-    for l in entry:
+    x = 0
+    cn_found = False
+    while x < len(entry):
+        l = entry[x]
         key = l[0].lower()
-
-        if key == "cn":
+        if not cn_found and key == "cn":
+            x -= 1
             entry.remove(l)
+            cn_found = True
+        else:
+            x += 1
 
     return entry
 
