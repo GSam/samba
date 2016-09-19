@@ -197,7 +197,8 @@ def __write_ldif_one(entry):
         else:
             vl = l[1]
 
-        if l[0].lower() == 'omobjectclass':
+        #print l
+        if l[2]:
             out.append("%s:: %s" % (l[0], l[1]))
             continue
 
@@ -211,11 +212,19 @@ def __transform_entry(entry, objectClass):
     """Perform transformations required to convert the LDIF-like schema
        file entries to LDIF, including Samba-specific stuff."""
 
+    #import pdb
+    #pdb.set_trace()
     entry = [l.split(":", 1) for l in entry]
 
     cn = ""
 
     for l in entry:
+        if l[1].startswith(': '):
+            l.append(True)
+            l[1] = l[1][2:]
+        else:
+            l.append(False)
+
         key = l[0].lower()
         l[1] = l[1].lstrip()
         l[1] = l[1].rstrip()
@@ -234,20 +243,21 @@ def __transform_entry(entry, objectClass):
             l[1] = __convert_bitfield(key, l[1])
 
         if key == "omobjectclass":
-            if not l[1].startswith(':'):
+            if not l[2]:
                 l[1] = oMObjectClassBER[l[1].strip()]
+                l[2] = True
 
         if isinstance(l[1], str):
             l[1] = fix_dn(l[1])
 
 
     assert(cn)
-    entry.insert(0, ["dn", "CN=%s,${SCHEMADN}" % cn])
-    entry.insert(1, ["objectClass", ["top", objectClass]])
-    entry.insert(2, ["cn", cn])
-    entry.insert(2, ["objectGUID", str(uuid.uuid4())])
-    entry.insert(2, ["adminDescription", cn])
-    entry.insert(2, ["adminDisplayName", cn])
+    #entry.insert(1, ["dn", "CN=%s,${SCHEMADN}" % cn, False])
+    #entry.insert(2, ["objectClass", ["top", objectClass], False])
+    entry.insert(3, ["cn", cn, False])
+    entry.insert(3, ["objectGUID", str(uuid.uuid4()), False])
+    #entry.insert(3, ["adminDescription", cn, False])
+    #entry.insert(3, ["adminDisplayName", cn, False])
 
     x = 0
     cn_found = False
@@ -258,6 +268,9 @@ def __transform_entry(entry, objectClass):
             x -= 1
             entry.remove(l)
             cn_found = True
+        elif key == "changetype":
+            x -= 1
+            entry.remove(l)
         else:
             x += 1
 
