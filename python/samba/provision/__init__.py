@@ -65,6 +65,7 @@ from samba.dcerpc.misc import (
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2003,
     DS_DOMAIN_FUNCTION_2008_R2,
+    DS_DOMAIN_FUNCTION_2012_R2,
     ENC_ALL_TYPES,
     )
 from samba.idmap import IDmapDB
@@ -1245,10 +1246,10 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
     # ATTENTION: Do NOT change these default values without discussion with the
     # team and/or release manager. They have a big impact on the whole program!
-    domainControllerFunctionality = DS_DOMAIN_FUNCTION_2008_R2
+    domainControllerFunctionality = DS_DOMAIN_FUNCTION_2012_R2
 
     if dom_for_fun_level is None:
-        dom_for_fun_level = DS_DOMAIN_FUNCTION_2008_R2
+        dom_for_fun_level = DS_DOMAIN_FUNCTION_2012_R2
 
     if dom_for_fun_level > domainControllerFunctionality:
         raise ProvisioningError("You want to run SAMBA 4 on a domain and forest function level which itself is higher than its actual DC function level (2008_R2). This won't work!")
