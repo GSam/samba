@@ -83,7 +83,7 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 			 TDB_DEFAULT |
 			 TDB_CLEAR_IF_FIRST |
 			 TDB_INCOMPATIBLE_HASH,
-			 O_RDWR | O_CREAT, 0600,
+			 O_RDWR | O_CREAT, 0660,
 			 DBWRAP_LOCK_ORDER_1,
 			 DBWRAP_FLAG_NONE);
 	if (db_ctx == NULL) {

@@ -76,7 +76,7 @@ NTSTATUS smbXsrv_session_global_init(struct messaging_context *msg_ctx)
 			  TDB_DEFAULT |
 			  TDB_CLEAR_IF_FIRST |
 			  TDB_INCOMPATIBLE_HASH,
-			  O_RDWR | O_CREAT, 0600,
+			  O_RDWR | O_CREAT, 0660,
 			  DBWRAP_LOCK_ORDER_1,
 			  DBWRAP_FLAG_NONE);
 	TALLOC_FREE(global_path);
