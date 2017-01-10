@@ -320,8 +320,8 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
-	ret = tdb_parse_record(ltdb->tdb, tdb_key, 
-			       ltdb_parse_data_unpack, &ctx); 
+	ret = ltdb->kv_ops->fetch_and_parse(ltdb, tdb_key,
+					    ltdb_parse_data_unpack, &ctx);
 	talloc_free(tdb_key.dptr);
 	
 	if (ret == -1) {
@@ -527,93 +527,6 @@ failed:
 }
 
 /*
-  search function for a non-indexed search
- */
-static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
-{
-	struct ldb_context *ldb;
-	struct ltdb_context *ac;
-	struct ldb_message *msg, *filtered_msg;
-	const struct ldb_val val = {
-		.data = data.dptr,
-		.length = data.dsize,
-	};
-	int ret;
-	bool matched;
-	unsigned int nb_elements_in_db;
-
-	ac = talloc_get_type(state, struct ltdb_context);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (key.dsize < 4 || 
-	    strncmp((char *)key.dptr, "DN=", 3) != 0) {
-		return 0;
-	}
-
-	msg = ldb_msg_new(ac);
-	if (!msg) {
-		ac->error = LDB_ERR_OPERATIONS_ERROR;
-		return -1;
-	}
-
-	/* unpack the record */
-	ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
-						   msg,
-						   NULL, 0,
-						   LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
-						   LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC,
-						   &nb_elements_in_db);
-	if (ret == -1) {
-		talloc_free(msg);
-		ac->error = LDB_ERR_OPERATIONS_ERROR;
-		return -1;
-	}
-
-	if (!msg->dn) {
-		msg->dn = ldb_dn_new(msg, ldb,
-				     (char *)key.dptr + 3);
-		if (msg->dn == NULL) {
-			talloc_free(msg);
-			ac->error = LDB_ERR_OPERATIONS_ERROR;
-			return -1;
-		}
-	}
-
-	/* see if it matches the given expression */
-	ret = ldb_match_msg_error(ldb, msg,
-				  ac->tree, ac->base, ac->scope, &matched);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		ac->error = LDB_ERR_OPERATIONS_ERROR;
-		return -1;
-	}
-	if (!matched) {
-		talloc_free(msg);
-		return 0;
-	}
-
-	/* filter the attributes that the user wants */
-	ret = ltdb_filter_attrs(ac, msg, ac->attrs, &filtered_msg);
-	talloc_free(msg);
-
-	if (ret == -1) {
-		ac->error = LDB_ERR_OPERATIONS_ERROR;
-		return -1;
-	}
-
-	ret = ldb_module_send_entry(ac->req, filtered_msg, NULL);
-	if (ret != LDB_SUCCESS) {
-		ac->request_terminated = true;
-		/* the callback failed, abort the operation */
-		ac->error = LDB_ERR_OPERATIONS_ERROR;
-		return -1;
-	}
-
-	return 0;
-}
-
-
-/*
   search the database with a LDAP-like expression.
   this is the "full search" non-indexed variant
 */
@@ -624,11 +537,7 @@ static int ltdb_search_full(struct ltdb_context *ctx)
 	int ret;
 
 	ctx->error = LDB_SUCCESS;
-	if (ltdb->in_transaction != 0) {
-		ret = tdb_traverse(ltdb->tdb, search_func, ctx);
-	} else {
-		ret = tdb_traverse_read(ltdb->tdb, search_func, ctx);
-	}
+	ret = ltdb->kv_ops->iterate(ltdb, ctx);
 
 	if (ret < 0) {
 		return LDB_ERR_OPERATIONS_ERROR;

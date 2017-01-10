@@ -679,6 +679,10 @@ static int msg_delete_element(struct ldb_module *module,
 	return LDB_ERR_NO_SUCH_ATTRIBUTE;
 }
 
+static TDB_DATA ltdb_tdb_fetch(struct ltdb_private *ltdb, TDB_DATA key)
+{
+	return tdb_fetch(ltdb->tdb, key);
+}
 
 /*
   modify a record - internal interface
@@ -713,7 +717,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		return LDB_ERR_OTHER;
 	}
 
-	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
+	tdb_data = ltdb->kv_ops->fetch(ltdb, tdb_key);
 	if (!tdb_data.dptr) {
 		talloc_free(tdb_key.dptr);
 		return ltdb->kv_ops->error(ltdb);
@@ -1404,6 +1408,114 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	ltdb_request_extended_done(ctx, ext, ret);
 }
 
+/*
+  search function for a non-indexed search
+ */
+static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+{
+       struct ldb_context *ldb;
+       struct ltdb_context *ac;
+       struct ldb_message *msg, *filtered_msg;
+       const struct ldb_val val = {
+               .data = data.dptr,
+               .length = data.dsize,
+       };
+       int ret;
+       bool matched;
+       unsigned int nb_elements_in_db;
+
+       ac = talloc_get_type(state, struct ltdb_context);
+       ldb = ldb_module_get_ctx(ac->module);
+
+       if (key.dsize < 4 ||
+           strncmp((char *)key.dptr, "DN=", 3) != 0) {
+               return 0;
+       }
+
+       msg = ldb_msg_new(ac);
+       if (!msg) {
+               ac->error = LDB_ERR_OPERATIONS_ERROR;
+               return -1;
+       }
+
+       /* unpack the record */
+       ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
+                                                  msg,
+                                                  NULL, 0,
+                                                  LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
+                                                  LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC,
+                                                  &nb_elements_in_db);
+       if (ret == -1) {
+               talloc_free(msg);
+               ac->error = LDB_ERR_OPERATIONS_ERROR;
+               return -1;
+       }
+
+       if (!msg->dn) {
+               msg->dn = ldb_dn_new(msg, ldb,
+                                    (char *)key.dptr + 3);
+               if (msg->dn == NULL) {
+                       talloc_free(msg);
+                       ac->error = LDB_ERR_OPERATIONS_ERROR;
+                       return -1;
+               }
+       }
+
+       /* see if it matches the given expression */
+       ret = ldb_match_msg_error(ldb, msg,
+                                 ac->tree, ac->base, ac->scope, &matched);
+       if (ret != LDB_SUCCESS) {
+               talloc_free(msg);
+               ac->error = LDB_ERR_OPERATIONS_ERROR;
+               return -1;
+       }
+       if (!matched) {
+               talloc_free(msg);
+               return 0;
+       }
+
+       /* filter the attributes that the user wants */
+       ret = ltdb_filter_attrs(ac, msg, ac->attrs, &filtered_msg);
+       talloc_free(msg);
+
+       if (ret == -1) {
+               ac->error = LDB_ERR_OPERATIONS_ERROR;
+               return -1;
+       }
+
+       ret = ldb_module_send_entry(ac->req, filtered_msg, NULL);
+       if (ret != LDB_SUCCESS) {
+               ac->request_terminated = true;
+               /* the callback failed, abort the operation */
+               ac->error = LDB_ERR_OPERATIONS_ERROR;
+               return -1;
+       }
+
+       return 0;
+}
+
+static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx)
+{
+	return tdb_traverse(ltdb->tdb, fn, ctx);
+}
+
+static int ltdb_tdb_iterate(struct ltdb_private *ltdb, void *ctx)
+{
+	if (ltdb->in_transaction != 0) {
+		return tdb_traverse(ltdb->tdb, search_func, ctx);
+	} else {
+		return tdb_traverse_read(ltdb->tdb, search_func, ctx);
+	}
+}
+
+static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
+				 int (*parser)(TDB_DATA key, TDB_DATA data,
+					       void *private_data),
+				 void *ctx)
+{
+	return tdb_parse_record(ltdb->tdb, key, parser, ctx);
+}
+
 static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
 {
 	return tdb_name(ltdb->tdb);
@@ -1413,7 +1525,10 @@ static struct kv_db_ops key_value_ops = {
 	.store = ltdb_tdb_store,
 	.delete = ltdb_tdb_delete,
 	.exists = ltdb_tdb_exists,
-	.fetch = NULL,
+	.iterate = ltdb_tdb_iterate,
+	.iterate_with_fn = ltdb_tdb_traverse_fn,
+	.fetch = ltdb_tdb_fetch,
+	.fetch_and_parse = ltdb_tdb_parse_record,
 	.lock_read = ltdb_lock_read,
 	.unlock_read = ltdb_unlock_read,
 	.begin_write = ltdb_tdb_transaction_start,
