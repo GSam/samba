@@ -92,6 +92,7 @@ int ltdb_err_map(enum TDB_ERROR tdb_code)
 }
 
 /*
+GENERIC FN
   lock the database for read - use by ltdb_search and ltdb_sequence_number
 */
 static int ltdb_lock_read(struct ldb_module *module)
@@ -111,6 +112,7 @@ static int ltdb_lock_read(struct ldb_module *module)
 }
 
 /*
+GENERIC FN
   unlock the database after a ltdb_lock_read()
 */
 static int ltdb_unlock_read(struct ldb_module *module)
