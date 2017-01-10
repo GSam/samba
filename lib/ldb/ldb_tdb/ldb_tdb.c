@@ -1937,6 +1937,45 @@ static const struct ldb_module_ops ltdb_ops = {
 	.read_unlock       = ltdb_unlock_read,
 };
 
+int init_store(struct ltdb_private *ltdb,
+		      const char *name,
+		      struct ldb_context *ldb,
+		      const char *options[],
+		      struct ldb_module **_module)
+{
+	struct ldb_module *module;
+
+	if (getenv("LDB_WARN_UNINDEXED")) {
+		ltdb->warn_unindexed = true;
+	}
+
+	if (getenv("LDB_WARN_REINDEX")) {
+		ltdb->warn_reindex = true;
+	}
+
+	ltdb->sequence_number = 0;
+
+	module = ldb_module_new(ldb, ldb, name, &ltdb_ops);
+	if (!module) {
+		ldb_oom(ldb);
+		talloc_free(ltdb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ldb_module_set_private(module, ltdb);
+	talloc_steal(module, ltdb);
+
+	if (ltdb_cache_load(module) != 0) {
+		ldb_asprintf_errstring(ldb, "Unable to load ltdb cache "
+				       "records for backend '%s'", name);
+		talloc_free(module);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*_module = module;
+
+	return LDB_SUCCESS;
+}
+
 /*
   connect to the database
 */
@@ -1944,7 +1983,6 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 			unsigned int flags, const char *options[],
 			struct ldb_module **_module)
 {
-	struct ldb_module *module;
 	const char *path;
 	int tdb_flags, open_flags;
 	struct ltdb_private *ltdb;
@@ -2010,6 +2048,13 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		open_flags = O_CREAT | O_RDWR;
 	}
 
+	ltdb = talloc_zero(ldb, struct ltdb_private);
+	if (!ltdb) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ltdb->kv_ops = &key_value_ops;
+
 	/* note that we use quite a large default hash size */
 	ltdb->tdb = ltdb_wrap_open(ltdb, path, 10000,
 				   tdb_flags, open_flags,
@@ -2026,35 +2071,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (getenv("LDB_WARN_UNINDEXED")) {
-		ltdb->warn_unindexed = true;
-	}
-
-	if (getenv("LDB_WARN_REINDEX")) {
-		ltdb->warn_reindex = true;
-	}
-
-	ltdb->sequence_number = 0;
-	ltdb->kv_ops = &key_value_ops;
-
-	module = ldb_module_new(ldb, ldb, "ldb_tdb backend", &ltdb_ops);
-	if (!module) {
-		ldb_oom(ldb);
-		talloc_free(ltdb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	ldb_module_set_private(module, ltdb);
-	talloc_steal(module, ltdb);
-
-	if (ltdb_cache_load(module) != 0) {
-		ldb_asprintf_errstring(ldb,
-				       "Unable to load ltdb cache records of tdb '%s'", path);
-		talloc_free(module);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	*_module = module;
-	return LDB_SUCCESS;
+	return init_store(ltdb, "ldb_tdb backend", ldb, options, _module);
 }
 
 int ldb_tdb_init(const char *version)
