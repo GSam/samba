@@ -654,17 +654,17 @@ int ltdb_search(struct ltdb_context *ctx)
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
-	if (ltdb_lock_read(module) != 0) {
+	if (ltdb->kv_ops->lock_read(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (ltdb_cache_load(module) != 0) {
-		ltdb_unlock_read(module);
+		ltdb->kv_ops->unlock_read(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (req->op.search.tree == NULL) {
-		ltdb_unlock_read(module);
+		ltdb->kv_ops->unlock_read(module);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -751,7 +751,7 @@ int ltdb_search(struct ltdb_context *ctx)
 				 * full search or we may return
 				 * duplicate entries
 				 */
-				ltdb_unlock_read(module);
+				ltdb->kv_ops->unlock_read(module);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			ret = ltdb_search_full(ctx);
@@ -761,7 +761,7 @@ int ltdb_search(struct ltdb_context *ctx)
 		}
 	}
 
-	ltdb_unlock_read(module);
+	ltdb->kv_ops->unlock_read(module);
 
 	return ret;
 }
