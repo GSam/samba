@@ -1119,12 +1119,32 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	return ret;
 }
 
+static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
+{
+	return tdb_transaction_start(ltdb->tdb);
+}
+
+static int ltdb_tdb_transaction_cancel(struct ltdb_private *ltdb)
+{
+	return tdb_transaction_cancel(ltdb->tdb);
+}
+
+static int ltdb_tdb_transaction_prepare_commit(struct ltdb_private *ltdb)
+{
+	return tdb_transaction_prepare_commit(ltdb->tdb);
+}
+
+static int ltdb_tdb_transaction_commit(struct ltdb_private *ltdb)
+{
+	return tdb_transaction_commit(ltdb->tdb);
+}
+
 static int ltdb_start_trans(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
-	if (tdb_transaction_start(ltdb->tdb) != 0) {
+	if (ltdb->kv_ops->begin_write(ltdb) != 0) {
 		return ltdb->kv_ops->error(ltdb);
 	}
 
@@ -1145,12 +1165,12 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 	}
 
 	if (ltdb_index_transaction_commit(module) != 0) {
-		tdb_transaction_cancel(ltdb->tdb);
+		ltdb->kv_ops->abort_write(ltdb);
 		ltdb->in_transaction--;
 		return ltdb->kv_ops->error(ltdb);
 	}
 
-	if (tdb_transaction_prepare_commit(ltdb->tdb) != 0) {
+	if (ltdb->kv_ops->prepare_write(ltdb) != 0) {
 		ltdb->in_transaction--;
 		return ltdb->kv_ops->error(ltdb);
 	}
@@ -1175,7 +1195,7 @@ static int ltdb_end_trans(struct ldb_module *module)
 	ltdb->in_transaction--;
 	ltdb->prepared_commit = false;
 
-	if (tdb_transaction_commit(ltdb->tdb) != 0) {
+	if (ltdb->kv_ops->finish_write(ltdb) != 0) {
 		return ltdb->kv_ops->error(ltdb);
 	}
 
@@ -1190,11 +1210,11 @@ static int ltdb_del_trans(struct ldb_module *module)
 	ltdb->in_transaction--;
 
 	if (ltdb_index_transaction_cancel(module) != 0) {
-		tdb_transaction_cancel(ltdb->tdb);
+		ltdb->kv_ops->abort_write(ltdb);
 		return ltdb->kv_ops->error(ltdb);
 	}
 
-	tdb_transaction_cancel(ltdb->tdb);
+	ltdb->kv_ops->abort_write(ltdb);
 	return LDB_SUCCESS;
 }
 
@@ -1396,6 +1416,10 @@ static struct kv_db_ops key_value_ops = {
 	.fetch = NULL,
 	.lock_read = ltdb_lock_read,
 	.unlock_read = ltdb_unlock_read,
+	.begin_write = ltdb_tdb_transaction_start,
+	.prepare_write = ltdb_tdb_transaction_prepare_commit,
+	.finish_write = ltdb_tdb_transaction_commit,
+	.abort_write = ltdb_tdb_transaction_cancel,
 	.error = ltdb_error,
 	.name = ltdb_tdb_name,
 };
