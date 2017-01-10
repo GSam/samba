@@ -226,7 +226,7 @@ static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	exists = tdb_exists(ltdb->tdb, tdb_key);
+	exists = ltdb->kv_ops->exists(ltdb, tdb_key);
 	talloc_free(tdb_key.dptr);
 		
 	if (exists) {
@@ -325,10 +325,11 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	talloc_free(tdb_key.dptr);
 	
 	if (ret == -1) {
-		if (tdb_error(ltdb->tdb) == TDB_ERR_NOEXIST) {
-			return LDB_ERR_NO_SUCH_OBJECT;
+		int error = ltdb->kv_ops->error(ltdb);
+		if (error != LDB_ERR_NO_SUCH_OBJECT) {
+			error = LDB_ERR_OPERATIONS_ERROR;
 		}
-		return LDB_ERR_OPERATIONS_ERROR;
+		return error;
 	} else if (ret != LDB_SUCCESS) {
 		return ret;
 	}

@@ -234,7 +234,7 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 		if (ltdb->warn_reindex) {
 			ldb_debug(ldb_module_get_ctx(module),
 				LDB_DEBUG_ERROR, "Reindexing %s due to modification on %s",
-				tdb_name(ltdb->tdb), ldb_dn_get_linearized(dn));
+				ltdb->kv_ops->name(ltdb), ldb_dn_get_linearized(dn));
 		}
 		ret = ltdb_reindex(module);
 	}
@@ -292,9 +292,9 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	tdb_data.dptr = ldb_data.data;
 	tdb_data.dsize = ldb_data.length;
 
-	ret = tdb_store(ltdb->tdb, tdb_key, tdb_data, flgs);
+	ret = ltdb->kv_ops->store(ltdb, tdb_key, tdb_data, flgs);
 	if (ret != 0) {
-		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+		ret = ltdb->kv_ops->error(ltdb);
 		goto done;
 	}
 
@@ -447,11 +447,11 @@ int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
 		return LDB_ERR_OTHER;
 	}
 
-	ret = tdb_delete(ltdb->tdb, tdb_key);
+	ret = ltdb->kv_ops->delete(ltdb, tdb_key);
 	talloc_free(tdb_key.dptr);
 
 	if (ret != 0) {
-		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+		ret = ltdb->kv_ops->error(ltdb);
 	}
 
 	return ret;
@@ -716,7 +716,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
 	if (!tdb_data.dptr) {
 		talloc_free(tdb_key.dptr);
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		return ltdb->kv_ops->error(ltdb);
 	}
 
 	msg2 = ldb_msg_new(tdb_key.dptr);
@@ -1078,7 +1078,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 
 	/* Only declare a conflict if the new DN already exists, and it isn't a case change on the old DN */
 	if (tdb_key_old.dsize != tdb_key.dsize || memcmp(tdb_key.dptr, tdb_key_old.dptr, tdb_key.dsize) != 0) {
-		if (tdb_exists(ltdb->tdb, tdb_key)) {
+		if (ltdb->kv_ops->exists(ltdb, tdb_key)) {
 			talloc_free(tdb_key_old.dptr);
 			talloc_free(tdb_key.dptr);
 			ldb_asprintf_errstring(ldb_module_get_ctx(module),
@@ -1125,7 +1125,7 @@ static int ltdb_start_trans(struct ldb_module *module)
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
 	if (tdb_transaction_start(ltdb->tdb) != 0) {
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		return ltdb->kv_ops->error(ltdb);
 	}
 
 	ltdb->in_transaction++;
@@ -1147,12 +1147,12 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 	if (ltdb_index_transaction_commit(module) != 0) {
 		tdb_transaction_cancel(ltdb->tdb);
 		ltdb->in_transaction--;
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		return ltdb->kv_ops->error(ltdb);
 	}
 
 	if (tdb_transaction_prepare_commit(ltdb->tdb) != 0) {
 		ltdb->in_transaction--;
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		return ltdb->kv_ops->error(ltdb);
 	}
 
 	ltdb->prepared_commit = true;
@@ -1176,7 +1176,7 @@ static int ltdb_end_trans(struct ldb_module *module)
 	ltdb->prepared_commit = false;
 
 	if (tdb_transaction_commit(ltdb->tdb) != 0) {
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		return ltdb->kv_ops->error(ltdb);
 	}
 
 	return LDB_SUCCESS;
@@ -1191,7 +1191,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 
 	if (ltdb_index_transaction_cancel(module) != 0) {
 		tdb_transaction_cancel(ltdb->tdb);
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		return ltdb->kv_ops->error(ltdb);
 	}
 
 	tdb_transaction_cancel(ltdb->tdb);
