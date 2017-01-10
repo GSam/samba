@@ -926,6 +926,10 @@ static int msg_delete_element(struct ldb_module *module,
 	return LDB_ERR_NO_SUCH_ATTRIBUTE;
 }
 
+static TDB_DATA ltdb_tdb_fetch(struct ltdb_private *ltdb, TDB_DATA key)
+{
+	return tdb_fetch(ltdb->tdb, key);
+}
 
 /*
   modify a record - internal interface
@@ -1713,6 +1717,28 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	ltdb_request_extended_done(ctx, ext, ret);
 }
 
+static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx)
+{
+	return tdb_traverse(ltdb->tdb, fn, ctx);
+}
+
+static int ltdb_tdb_iterate(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx)
+{
+	if (ltdb->in_transaction != 0) {
+		return tdb_traverse(ltdb->tdb, fn, ctx);
+	} else {
+		return tdb_traverse_read(ltdb->tdb, fn, ctx);
+	}
+}
+
+static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
+				 int (*parser)(TDB_DATA key, TDB_DATA data,
+					       void *private_data),
+				 void *ctx)
+{
+	return tdb_parse_record(ltdb->tdb, key, parser, ctx);
+}
+
 static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
 {
 	return tdb_name(ltdb->tdb);
@@ -1722,7 +1748,10 @@ static struct kv_db_ops key_value_ops = {
 	.store = ltdb_tdb_store,
 	.delete = ltdb_tdb_delete,
 	.exists = ltdb_tdb_exists,
-	.fetch = NULL,
+	.iterate = ltdb_tdb_iterate,
+	.iterate_write = ltdb_tdb_traverse_fn,
+	.fetch = ltdb_tdb_fetch,
+	.fetch_and_parse = ltdb_tdb_parse_record,
 	.lock_read = ltdb_lock_read,
 	.unlock_read = ltdb_unlock_read,
 	.begin_write = ltdb_tdb_transaction_start,

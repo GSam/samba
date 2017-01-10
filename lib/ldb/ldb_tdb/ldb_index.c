@@ -2598,7 +2598,7 @@ int ltdb_reindex(struct ldb_module *module)
 	/* first traverse the database deleting any @INDEX records by
 	 * putting NULL entries in the in-memory tdb
 	 */
-	ret = tdb_traverse(ltdb->tdb, delete_index, module);
+	ret = ltdb->kv_ops->iterate_write(ltdb, delete_index, module);
 	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "index deletion traverse failed: %s",
@@ -2629,7 +2629,7 @@ int ltdb_reindex(struct ldb_module *module)
 	ctx.count = 0;
 
 	/* now traverse adding any indexes for normal LDB records */
-	ret = tdb_traverse(ltdb->tdb, re_index, &ctx);
+	ret = ltdb->kv_ops->iterate_write(ltdb, re_index, &ctx);
 	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "reindexing traverse failed: %s",

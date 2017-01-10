@@ -252,9 +252,10 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
-	ret = tdb_parse_record(ltdb->tdb, tdb_key, 
-			       ltdb_parse_data_unpack, &ctx); 
-	
+	ret = ltdb->kv_ops->fetch_and_parse(ltdb, tdb_key,
+					    ltdb_parse_data_unpack, &ctx);
+	talloc_free(tdb_key.dptr);
+
 	if (ret == -1) {
 		ret = ltdb->kv_ops->error(ltdb);
 		if (ret == LDB_SUCCESS) {
@@ -591,11 +592,7 @@ static int ltdb_search_full(struct ltdb_context *ctx)
 	int ret;
 
 	ctx->error = LDB_SUCCESS;
-	if (ltdb->in_transaction != 0) {
-		ret = tdb_traverse(ltdb->tdb, search_func, ctx);
-	} else {
-		ret = tdb_traverse_read(ltdb->tdb, search_func, ctx);
-	}
+	ret = ltdb->kv_ops->iterate(ltdb, search_func, ctx);
 
 	if (ret < 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
