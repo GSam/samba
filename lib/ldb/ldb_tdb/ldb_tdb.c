@@ -1744,6 +1744,15 @@ static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
 	return tdb_name(ltdb->tdb);
 }
 
+static bool ltdb_tdb_changed(struct ltdb_private *ltdb)
+{
+	bool ret = (tdb_get_seqnum(ltdb->tdb) != ltdb->tdb_seqnum);
+
+	ltdb->tdb_seqnum = tdb_get_seqnum(ltdb->tdb);
+
+	return ret;
+}
+
 static struct kv_db_ops key_value_ops = {
 	.store = ltdb_tdb_store,
 	.delete = ltdb_tdb_delete,
@@ -1760,6 +1769,7 @@ static struct kv_db_ops key_value_ops = {
 	.abort_write = ltdb_tdb_transaction_cancel,
 	.error = ltdb_error,
 	.name = ltdb_tdb_name,
+	.has_changed = ltdb_tdb_changed,
 };
 
 static void ltdb_callback(struct tevent_context *ev,
