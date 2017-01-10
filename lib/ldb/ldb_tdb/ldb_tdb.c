@@ -256,6 +256,16 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 	return ret;
 }
 
+static int ltdb_tdb_store(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags)
+{
+	return tdb_store(ltdb->tdb, key, data, flags);
+}
+
+static int ltdb_error(struct ltdb_private *ltdb)
+{
+	return ltdb_err_map(tdb_error(ltdb->tdb));
+}
+
 /*
   store a record into the db
 */
@@ -1364,6 +1374,14 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	ltdb_request_extended_done(ctx, ext, ret);
 }
 
+static struct kv_db_ops key_value_ops = {
+	.store = ltdb_tdb_store,
+	.fetch = NULL,
+	.lock_read = ltdb_lock_read,
+	.unlock_read = ltdb_unlock_read,
+	.error = ltdb_error,
+};
+
 static void ltdb_callback(struct tevent_context *ev,
 			  struct tevent_timer *te,
 			  struct timeval t,
@@ -1600,6 +1618,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	ltdb->sequence_number = 0;
+	ltdb->kv_ops = &key_value_ops;
 
 	module = ldb_module_new(ldb, ldb, "ldb_tdb backend", &ltdb_ops);
 	if (!module) {
