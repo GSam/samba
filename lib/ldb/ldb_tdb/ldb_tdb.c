@@ -421,6 +421,16 @@ static int ltdb_add(struct ltdb_context *ctx)
 	return ret;
 }
 
+static int ltdb_tdb_exists(struct ltdb_private *ltdb, TDB_DATA key)
+{
+	return tdb_exists(ltdb->tdb, key);
+}
+
+static int ltdb_tdb_delete(struct ltdb_private *ltdb, TDB_DATA tdb_key)
+{
+	return tdb_delete(ltdb->tdb, tdb_key);
+}
+
 /*
   delete a record from the database, not updating indexes (used for deleting
   index records)
@@ -1374,12 +1384,20 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	ltdb_request_extended_done(ctx, ext, ret);
 }
 
+static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
+{
+	return tdb_name(ltdb->tdb);
+}
+
 static struct kv_db_ops key_value_ops = {
 	.store = ltdb_tdb_store,
+	.delete = ltdb_tdb_delete,
+	.exists = ltdb_tdb_exists,
 	.fetch = NULL,
 	.lock_read = ltdb_lock_read,
 	.unlock_read = ltdb_unlock_read,
 	.error = ltdb_error,
+	.name = ltdb_tdb_name,
 };
 
 static void ltdb_callback(struct tevent_context *ev,
