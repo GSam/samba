@@ -9,6 +9,7 @@ struct kv_db_ops {
 	int (*store)(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags);
 	int (*delete)(struct ltdb_private *ltdb, TDB_DATA key);
 	int (*exists)(struct ltdb_private *ltdb, TDB_DATA key);
+	int (*iterate)(struct ltdb_private *ltdb, void *ctx);
 	int (*fetch)(void);
 	int (*lock_read)(struct ldb_module *);
 	int (*unlock_read)(struct ldb_module *);
