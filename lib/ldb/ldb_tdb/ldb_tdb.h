@@ -13,6 +13,10 @@ struct kv_db_ops {
 	int (*fetch)(void);
 	int (*lock_read)(struct ldb_module *);
 	int (*unlock_read)(struct ldb_module *);
+	int (*begin_write)(struct ltdb_private *);
+	int (*prepare_write)(struct ltdb_private *);
+	int (*abort_write)(struct ltdb_private *);
+	int (*finish_write)(struct ltdb_private *);
 	int (*error)(struct ltdb_private *ltdb);
 	const char * (*name)(struct ltdb_private *ltdb);
 };

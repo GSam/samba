@@ -1406,6 +1406,26 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	return ret;
 }
 
+static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
+{
+	return tdb_transaction_start(ltdb->tdb);
+}
+
+static int ltdb_tdb_transaction_cancel(struct ltdb_private *ltdb)
+{
+	return tdb_transaction_cancel(ltdb->tdb);
+}
+
+static int ltdb_tdb_transaction_prepare_commit(struct ltdb_private *ltdb)
+{
+	return tdb_transaction_prepare_commit(ltdb->tdb);
+}
+
+static int ltdb_tdb_transaction_commit(struct ltdb_private *ltdb)
+{
+	return tdb_transaction_commit(ltdb->tdb);
+}
+
 static int ltdb_start_trans(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
@@ -1416,7 +1436,7 @@ static int ltdb_start_trans(struct ldb_module *module)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	if (tdb_transaction_start(ltdb->tdb) != 0) {
+	if (ltdb->kv_ops->begin_write(ltdb) != 0) {
 		return ltdb->kv_ops->error(ltdb);
 	}
 
@@ -1439,20 +1459,20 @@ static int ltdb_prepare_commit(struct ldb_module *module)
 
 	ret = ltdb_index_transaction_commit(module);
 	if (ret != LDB_SUCCESS) {
-		tdb_transaction_cancel(ltdb->tdb);
+		ltdb->kv_ops->abort_write(ltdb);
 		ltdb->in_transaction--;
 		return ret;
 		/*return ltdb->kv_ops->error(ltdb);*/
 	}
 
-	if (tdb_transaction_prepare_commit(ltdb->tdb) != 0) {
-		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+	if (ltdb->kv_ops->prepare_write(ltdb) != 0) {
+		ret = ltdb->kv_ops->error(ltdb);
 		ltdb->in_transaction--;
 		ldb_debug_set(ldb_module_get_ctx(module),
 			      LDB_DEBUG_FATAL,
 			      "Failure during "
 			      "tdb_transaction_prepare_commit(): %s -> %s",
-			      tdb_errorstr(ltdb->tdb),
+			      tdb_errorstr(ltdb->tdb), /* TODO */
 			      ldb_strerror(ret));
 		return ret;
 		/*return ltdb->kv_ops->error(ltdb);*/
@@ -1479,7 +1499,7 @@ static int ltdb_end_trans(struct ldb_module *module)
 	ltdb->in_transaction--;
 	ltdb->prepared_commit = false;
 
-	if (tdb_transaction_commit(ltdb->tdb) != 0) {
+	if (ltdb->kv_ops->finish_write(ltdb) != 0) {
 		ret = ltdb->kv_ops->error(ltdb);
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "Failure during tdb_transaction_commit(): %s -> %s",
@@ -1499,11 +1519,11 @@ static int ltdb_del_trans(struct ldb_module *module)
 	ltdb->in_transaction--;
 
 	if (ltdb_index_transaction_cancel(module) != 0) {
-		tdb_transaction_cancel(ltdb->tdb);
+		ltdb->kv_ops->abort_write(ltdb);
 		return ltdb->kv_ops->error(ltdb);
 	}
 
-	tdb_transaction_cancel(ltdb->tdb);
+	ltdb->kv_ops->abort_write(ltdb);
 	return LDB_SUCCESS;
 }
 
@@ -1705,6 +1725,10 @@ static struct kv_db_ops key_value_ops = {
 	.fetch = NULL,
 	.lock_read = ltdb_lock_read,
 	.unlock_read = ltdb_unlock_read,
+	.begin_write = ltdb_tdb_transaction_start,
+	.prepare_write = ltdb_tdb_transaction_prepare_commit,
+	.finish_write = ltdb_tdb_transaction_commit,
+	.abort_write = ltdb_tdb_transaction_cancel,
 	.error = ltdb_error,
 	.name = ltdb_tdb_name,
 };
