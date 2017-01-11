@@ -1717,9 +1717,35 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	ltdb_request_extended_done(ctx, ext, ret);
 }
 
-static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx)
+struct kv_ctx {
+	ldb_kv_traverse_fn kv_traverse_fn;
+	void *ctx;
+	struct ltdb_private *ltdb;
+};
+
+static int ldb_tdb_traverse_fn_wrapper(struct tdb_context *tdb, TDB_DATA tdb_key, TDB_DATA tdb_data, void *ctx)
 {
-	return tdb_traverse(ltdb->tdb, fn, ctx);
+	struct kv_ctx *kv_ctx = ctx;
+	struct ldb_val key = {
+		.length = tdb_key.dsize,
+		.data = tdb_key.dptr,
+	};
+	struct ldb_val data = {
+		.length = tdb_data.dsize,
+		.data = tdb_data.dptr,
+	};
+	return kv_ctx->kv_traverse_fn(kv_ctx->ltdb, &key, &data, ctx);
+}
+
+static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx)
+{
+	struct kv_ctx kv_ctx = {
+		.kv_traverse_fn = fn,
+		.ctx = ctx,
+		.ltdb = ltdb
+	};
+
+	return tdb_traverse(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
 }
 
 static int ltdb_tdb_iterate(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx)

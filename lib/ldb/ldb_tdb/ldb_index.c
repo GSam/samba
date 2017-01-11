@@ -2363,7 +2363,7 @@ struct ltdb_reindex_context {
 };
 
 /*
-  traversal function that adds @INDEX records during a re index
+  traversal function that adds @INDEX records during a re index TODO wrong comment
 */
 static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
@@ -2377,6 +2377,14 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 		.length = data.dsize,
 	};
 	int ret;
+	TDB_DATA key = {
+		.dptr = key_val->data,
+		.dsize = key_val->length,
+	};
+	TDB_DATA data = {
+		.dptr = val->data,
+		.dsize = val->length,
+	};
 	TDB_DATA key2;
 	bool is_record;
 	
@@ -2397,7 +2405,7 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 		return -1;
 	}
 
-	ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
+	ret = ldb_unpack_data_only_attr_list_flags(ldb, val,
 						   msg,
 						   NULL, 0,
 						   LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC,
@@ -2598,7 +2606,7 @@ int ltdb_reindex(struct ldb_module *module)
 	/* first traverse the database deleting any @INDEX records by
 	 * putting NULL entries in the in-memory tdb
 	 */
-	ret = ltdb->kv_ops->iterate_write(ltdb, delete_index, module);
+	ret = ltdb->kv_ops->iterate(ltdb, delete_index, module);
 	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "index deletion traverse failed: %s",
@@ -2610,8 +2618,7 @@ int ltdb_reindex(struct ldb_module *module)
 	ctx.error = 0;
 	ctx.count = 0;
 
-	/* now traverse adding any indexes for normal LDB records */
-	ret = tdb_traverse(ltdb->tdb, re_key, &ctx);
+	ret = ltdb->kv_ops->iterate(ltdb, re_key, module);
 	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "key correction traverse failed: %s",

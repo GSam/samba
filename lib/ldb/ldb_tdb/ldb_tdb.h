@@ -5,12 +5,13 @@
 #include "ldb_module.h"
 
 struct ltdb_private;
+typedef int (*ldb_kv_traverse_fn)(struct ltdb_private *ltdb, struct ldb_val *key, struct ldb_val *data, void *ctx);
 struct kv_db_ops {
 	int (*store)(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags);
 	int (*delete)(struct ltdb_private *ltdb, TDB_DATA key);
 	int (*exists)(struct ltdb_private *ltdb, TDB_DATA key);
 	int (*iterate)(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx);
-	int (*iterate_write)(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx);
+	int (*iterate_write)(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx);
 	TDB_DATA (*fetch)(struct ltdb_private *ltdb, TDB_DATA key);
 	int (*fetch_and_parse)(struct ltdb_private *ltdb, TDB_DATA key,
                                int (*parser)(TDB_DATA key, TDB_DATA data,
