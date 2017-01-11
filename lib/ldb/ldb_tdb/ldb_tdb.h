@@ -35,6 +35,7 @@ struct kv_db_ops {
 struct ltdb_private {
 	struct kv_db_ops *kv_ops;
 	TDB_CONTEXT *tdb;
+	struct lmdb_private *lmdb_private;
 	unsigned int connect_flags;
 	
 	unsigned long long sequence_number;
@@ -202,3 +203,4 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 int init_store(struct ltdb_private *ltdb, const char *name,
 	       struct ldb_context *ldb, const char *options[],
 	       struct ldb_module **_module);
+

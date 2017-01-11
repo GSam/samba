@@ -1,0 +1,471 @@
+/*
+   ldb database library using mdb back end
+
+   Copyright (C) Jakub Hrozek 2014
+   Copyright (C) Catalyst.Net Ltd 2017
+
+     ** NOTE! The following LGPL license applies to the ldb
+     ** library. This does NOT imply that all of Samba is released
+     ** under the LGPL
+
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "ldb_mdb.h"
+#include "lib/ldb/ldb_tdb/ldb_tdb.h"
+#include "include/dlinklist.h"
+
+#define MDB_URL_PREFIX		"mdb://"
+#define MDB_URL_PREFIX_SIZE	(sizeof(MDB_URL_PREFIX)-1)
+
+#define MEGABYTE (1024*1024)
+
+static MDB_txn *lmdb_trans_get_tx(struct lmdb_trans *ltx)
+{
+	if (ltx == NULL) {
+		return NULL;
+	}
+
+	return ltx->tx;
+}
+
+static void trans_push(struct lmdb_private *lmdb, struct lmdb_trans *ltx)
+{
+	if (lmdb->txlist) {
+		talloc_steal(lmdb->txlist, ltx);
+	}
+
+	DLIST_ADD(lmdb->txlist, ltx);
+}
+
+static void trans_finished(struct lmdb_private *lmdb, struct lmdb_trans *ltx)
+{
+	ltx->tx = NULL; /* Neutralize destructor */
+	DLIST_REMOVE(lmdb->txlist, ltx);
+	talloc_free(ltx);
+}
+
+static int ldb_mdb_trans_destructor(struct lmdb_trans *ltx)
+{
+	if (ltx != NULL && ltx->tx != NULL) {
+		mdb_txn_abort(ltx->tx);
+	}
+	return 0;
+}
+
+static struct lmdb_trans *lmdb_private_trans_head(struct lmdb_private *lmdb)
+{
+	struct lmdb_trans *ltx;
+
+	ltx = lmdb->txlist;
+	return ltx;
+}
+
+static int ltdb_tdb_store(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags)
+{
+	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	MDB_val mdb_key;
+	MDB_val mdb_data;
+	MDB_dbi mdb_dbi;
+	int mdb_flags;
+	MDB_txn *txn = NULL; /* TODO */
+	MDB_dbi dbi = 0;
+
+	mdb_key.mv_size = key.dsize;
+	mdb_key.mv_data = key.dptr;
+
+	mdb_data.mv_size = data.dsize;
+	mdb_data.mv_data = data.dptr;
+
+	if (flags == TDB_INSERT) {
+		mdb_flags = MDB_NOOVERWRITE;
+	} else {
+		/* TODO TDB_MODIFY does an exists check */
+		mdb_flags = 0;
+	}
+
+        lmdb->error = mdb_put(txn, dbi, &mdb_key, &mdb_data, mdb_flags);
+
+	/* TODO set error */
+
+	return lmdb->error;
+}
+
+static int ltdb_tdb_exists(struct ltdb_private *ltdb, TDB_DATA key)
+{
+	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	MDB_val mdb_key;
+	MDB_val mdb_data;
+	MDB_txn *txn = NULL; /* TODO */
+	MDB_dbi dbi = 0;
+
+	mdb_key.mv_size = key.dsize;
+	mdb_key.mv_data = key.dptr;
+
+        lmdb->error = mdb_get(txn, dbi, &mdb_key, &mdb_data);
+	if (lmdb->error != 0) {
+		return 1;
+	}
+	return 0;
+}
+
+static int ltdb_tdb_delete(struct ltdb_private *ltdb, TDB_DATA key)
+{
+	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	MDB_val mdb_key;
+	MDB_val mdb_data;
+	MDB_txn *txn = NULL; /* TODO */
+	MDB_dbi dbi = 0;
+
+	mdb_key.mv_size = key.dsize;
+	mdb_key.mv_data = key.dptr;
+
+        lmdb->error = mdb_del(txn, dbi, &mdb_key, NULL);
+
+	/* TODO store error */
+	return lmdb->error;
+}
+
+static TDB_DATA ltdb_tdb_fetch(struct ltdb_private *ltdb, TDB_DATA key)
+{
+	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	MDB_val mdb_key;
+	MDB_val mdb_data;
+	MDB_txn *txn = NULL; /* TODO */
+	MDB_dbi dbi = 0;
+
+	mdb_key.mv_size = key.dsize;
+	mdb_key.mv_data = key.dptr;
+
+        lmdb->error = mdb_get(txn, dbi, &mdb_key, &mdb_data);
+	if (lmdb->error != 0) {
+		return tdb_null;
+	} else {
+		TDB_DATA result;
+		result.dsize = mdb_data.mv_size;
+		/* TODO must talloc_memdup? */
+		result.dptr = mdb_data.mv_data;
+		return result;
+	}
+}
+
+static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx)
+{
+	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	MDB_val mdb_key;
+	MDB_val mdb_data;
+	MDB_txn *txn = NULL; /* TODO */
+	MDB_dbi dbi = 0;
+
+	/*mdb_key.mv_size = key.dsize;
+	mdb_key.mv_data = key.dptr;
+
+	while ((lmdb->error = mdb_cursor_get(cursor, &mdb_key,
+				     &mdb_val, MDB_NEXT)) == 0) {
+		fn(..., ..., ..., ...);
+	}*/
+	return LDB_SUCCESS;
+}
+
+static int ltdb_tdb_iterate(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx)
+{
+        if (ltdb->in_transaction != 0) {
+                return ltdb_tdb_traverse_fn(ltdb, fn, ctx);
+        } else {
+		/* TODO */
+		/*mdb_txn_begin(READONLY);*/
+                return ltdb_tdb_traverse_fn(ltdb, fn, ctx);
+		/*mdb_txn_commit(READONLY);*/
+        }
+}
+
+static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
+                                 int (*parser)(TDB_DATA key, TDB_DATA data,
+                                               void *private_data),
+                                 void *ctx)
+{
+	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	MDB_val mdb_key;
+	MDB_val mdb_data;
+	MDB_txn *txn = NULL; /* TODO */
+	MDB_dbi dbi = 0;
+	TDB_DATA data;
+
+	mdb_key.mv_size = key.dsize;
+	mdb_key.mv_data = key.dptr;
+
+	/* TODO memdup ? */
+        lmdb->error = mdb_get(txn, dbi, &mdb_key, &mdb_data);
+	data.dptr = mdb_data.mv_data;
+	data.dsize = mdb_data.mv_size;
+	return parser(key, data, ctx);
+}
+
+
+static int ltdb_lock_read(struct ldb_module *module)
+{
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	int ret = 0;
+
+	if (ltdb->in_transaction == 0 &&
+	    ltdb->read_lock_count == 0) {
+		struct lmdb_trans *ltx = talloc_zero(lmdb, struct lmdb_trans);
+		if (ltx == NULL) {
+			return ldb_oom(lmdb->ldb);
+		}
+		talloc_set_destructor(ltx, ldb_mdb_trans_destructor);
+		ltx->lmdb = lmdb;
+
+		/* No existing transactions */
+		ret = mdb_txn_begin(lmdb->env, NULL, MDB_RDONLY, &ltx->tx);
+		lmdb->read_txn = ltx->tx;
+	}
+	if (ret == 0) {
+		ltdb->read_lock_count++;
+	} else {
+		ldb_asprintf_errstring(lmdb->ldb,
+				       "mdb_txn_begin failed: %s\n",
+				       mdb_strerror(ret));
+		return ldb_mdb_err_map(ret);
+	}
+
+	return lmdb->error;
+}
+
+static int ltdb_unlock_read(struct ldb_module *module)
+{
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	if (ltdb->in_transaction == 0 && ltdb->read_lock_count == 1) {
+		tdb_unlockall_read(ltdb->tdb);
+		mdb_txn_commit(ltx->tx);
+		return 0;
+	}
+	ltdb->read_lock_count--;
+	return 0;
+}
+
+static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
+{
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct lmdb_trans *ltx;
+	struct lmdb_trans *ltx_head;
+	MDB_txn *tx_parent;
+
+	ltx = talloc_zero(lmdb, struct lmdb_trans);
+	if (ltx == NULL) {
+		return ldb_oom(lmdb->ldb);
+	}
+	talloc_set_destructor(ltx, ldb_mdb_trans_destructor);
+
+	ltx->db_op = talloc_zero(ltx, struct lmdb_db_op);
+	if (ltx->db_op  == NULL) {
+		talloc_free(ltx);
+		return ldb_oom(lmdb->ldb);
+	}
+
+	ltx->lmdb = lmdb;
+	ltx->db_op->mdb_dbi = 0;
+	ltx->db_op->ltx = ltx;
+
+	ltx_head = lmdb_private_trans_head(lmdb);
+	tx_parent = lmdb_trans_get_tx(ltx_head);
+
+	lmdb->error = mdb_txn_begin(lmdb->env, tx_parent, 0, &ltx->tx);
+
+	trans_push(lmdb, ltx);
+
+	return lmdb->error;
+}
+
+static int ltdb_tdb_transaction_cancel(struct ltdb_private *ltdb)
+{
+	struct lmdb_trans *ltx;
+
+	ltx = lmdb_private_trans_head(lmdb);
+	if (ltx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	lmdb->error = mdb_txn_abort(ltx->tx);
+	trans_finished(lmdb, ltx);
+	return lmdb->error;
+}
+
+static int ltdb_tdb_transaction_prepare_commit(struct ltdb_private *ltdb)
+{
+	/* No need to prepare a commit */
+	return LDB_SUCCESS;
+}
+
+static int ltdb_tdb_transaction_commit(struct ltdb_private *ltdb)
+{
+	struct lmdb_trans *ltx;
+
+	ltx = lmdb_private_trans_head(lmdb);
+	if (ltx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	lmdb->error = mdb_txn_commit(ltx->tx);
+	trans_finished(lmdb, ltx);
+
+	return lmdb->error;
+}
+
+static int lmdb_error(struct ltdb_private *ltdb)
+{
+	return ltdb->lmdb_private->error;
+}
+
+static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
+{
+	return "lmdb";
+}
+
+static bool ltdb_tdb_changed(struct ltdb_private *ltdb)
+{
+	return true;
+}
+
+
+static struct kv_db_ops lmdb_key_value_ops = {
+	.store = ltdb_tdb_store,
+	.delete = ltdb_tdb_delete,
+	.exists = ltdb_tdb_exists,
+	.iterate = ltdb_tdb_iterate,
+	.iterate_write = ltdb_tdb_traverse_fn,
+	.fetch = ltdb_tdb_fetch,
+	.fetch_and_parse = ltdb_tdb_parse_record,
+	.lock_read = ltdb_lock_read,
+	.unlock_read = ltdb_unlock_read,
+	.begin_write = ltdb_tdb_transaction_start,
+	.prepare_write = ltdb_tdb_transaction_prepare_commit,
+	.finish_write = ltdb_tdb_transaction_commit,
+	.abort_write = ltdb_tdb_transaction_cancel,
+	.error = lmdb_error,
+	.name = ltdb_tdb_name,
+	.has_changed = ltdb_tdb_changed,
+};
+
+static const char *lmdb_get_path(const char *url)
+{
+	const char *path;
+
+	/* parse the url */
+	if (strchr(url, ':')) {
+		if (strncmp(url, MDB_URL_PREFIX, MDB_URL_PREFIX_SIZE) != 0) {
+			return NULL;
+		}
+		path = url + MDB_URL_PREFIX_SIZE;
+	} else {
+		path = url;
+	}
+
+	return path;
+}
+
+static int lmdb_pvt_destructor(struct lmdb_private *lmdb)
+{
+	mdb_env_close(lmdb->env);
+	return 0;
+}
+
+static struct lmdb_private *lmdb_pvt_create(TALLOC_CTX *mem_ctx,
+					    struct ldb_context *ldb,
+					    const char *path)
+{
+	struct lmdb_private *lmdb;
+	int ret;
+
+	lmdb = talloc_zero(ldb, struct lmdb_private);
+	if (lmdb == NULL) {
+		return NULL;
+	}
+	lmdb->ldb = ldb;
+
+	ret = mdb_env_create(&lmdb->env);
+	if (ret != 0) {
+		ldb_asprintf_errstring(ldb,
+				"Could not create MDB environment %s: %s\n",
+				path, mdb_strerror(ret));
+		talloc_free(lmdb);
+		return NULL;
+	}
+
+	/* Close when lmdb is released */
+	talloc_set_destructor(lmdb, lmdb_pvt_destructor);
+
+	ret = mdb_env_set_mapsize(lmdb->env, 100 * MEGABYTE);
+	if (ret != 0) {
+		talloc_free(lmdb);
+		return NULL;
+	}
+
+	/* MDB_NOSUBDIR implies there is a separate file called path and a
+	 * separate lockfile called path-lock
+	 */
+	ret = mdb_env_open(lmdb->env, path, MDB_NOSUBDIR, 0644);
+	if (ret != 0) {
+		ldb_asprintf_errstring(ldb,
+				"Could not open DB %s: %s\n",
+				path, mdb_strerror(ret));
+		talloc_free(lmdb);
+		return NULL;
+	}
+
+	return lmdb;
+
+}
+
+static int lmdb_connect(struct ldb_context *ldb, const char *url,
+			unsigned int flags, const char *options[],
+			struct ldb_module **_module)
+{
+	const char *path = NULL;
+	struct lmdb_private *lmdb = NULL;
+	struct ltdb_private *ltdb = NULL;
+
+	path = lmdb_get_path(url);
+	if (path == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid mdb URL '%s'", url);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+        ltdb = talloc_zero(ldb, struct ltdb_private);
+        if (!ltdb) {
+                ldb_oom(ldb);
+                return LDB_ERR_OPERATIONS_ERROR;
+        }
+	ltdb->kv_ops = &lmdb_key_value_ops;
+
+	lmdb = lmdb_pvt_create(ldb, ldb, path);
+	if (lmdb == NULL) {
+		return ldb_oom(ldb);
+	}
+
+        return init_store(ltdb, "ldb_mdb backend", ldb, options, _module);
+}
+
+
+
+int ldb_mdb_init(const char *version)
+{
+	LDB_MODULE_CHECK_VERSION(version);
+	return ldb_register_backend("mdb", lmdb_connect, false);
+}

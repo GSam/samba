@@ -315,6 +315,15 @@ def build(bld):
                          deps='tdb ldb',
                          subsystem='ldb')
 
+        bld.SAMBA_MODULE('ldb_mdb',
+                         bld.SUBDIR('ldb_mdb',
+                                    '''ldb_mdb.c'''),
+                         init_function='ldb_mdb_init',
+                         module_init_name='ldb_init_module',
+                         internal_module=False,
+                         deps='ldb ldb_tdb',
+                         subsystem='ldb')
+
         # have a separate subsystem for common/ldb.c, so it can rebuild
         # for install with a different -DLDB_MODULESDIR=
         bld.SAMBA_SUBSYSTEM('LIBLDB_MAIN',
