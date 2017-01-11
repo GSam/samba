@@ -1757,6 +1757,37 @@ static int ltdb_tdb_iterate(struct ltdb_private *ltdb, tdb_traverse_func fn, voi
 	}
 }
 
+static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA key2, TDB_DATA data, void *ctx)
+{
+	int tdb_ret;
+	tdb_ret = tdb_delete(tdb, key);
+	if (tdb_ret != 0) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Failed to delete %*.*s "
+			  "for rekey as %*.*s: %s",
+			  (int)key.dsize, (int)key.dsize,
+			  (const char *)key.dptr,
+			  (int)key2.dsize, (int)key2.dsize,
+			  (const char *)key.dptr,
+			  tdb_errorstr(tdb));
+		ctx->error = ltdb_err_map(tdb_error(tdb));
+		return -1;
+	}
+	tdb_ret = tdb_store(tdb, key2, data, 0);
+	if (tdb_ret != 0) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Failed to rekey %*.*s as %*.*s: %s",
+			  (int)key.dsize, (int)key.dsize,
+			  (const char *)key.dptr,
+			  (int)key2.dsize, (int)key2.dsize,
+			  (const char *)key.dptr,
+			  tdb_errorstr(tdb));
+		ctx->error = ltdb_err_map(tdb_error(tdb));
+		return -1;
+	}
+	return tdb_ret;
+}
+
 static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
 				 int (*parser)(TDB_DATA key, TDB_DATA data,
 					       void *private_data),
@@ -1785,6 +1816,7 @@ static struct kv_db_ops key_value_ops = {
 	.exists = ltdb_tdb_exists,
 	.iterate = ltdb_tdb_iterate,
 	.iterate_write = ltdb_tdb_traverse_fn,
+	.update_in_iterate = ltdb_tdb_update_in_iterate,
 	.fetch = ltdb_tdb_fetch,
 	.fetch_and_parse = ltdb_tdb_parse_record,
 	.lock_read = ltdb_lock_read,

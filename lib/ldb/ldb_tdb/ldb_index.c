@@ -2360,6 +2360,7 @@ struct ltdb_reindex_context {
 	struct ldb_module *module;
 	int error;
 	uint32_t count;
+	void *cursor;
 };
 
 /*
@@ -2441,32 +2442,7 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 	}
 	if (key.dsize != key2.dsize ||
 	    (memcmp(key.dptr, key2.dptr, key.dsize) != 0)) {
-		int tdb_ret;
-		tdb_ret = tdb_delete(tdb, key);
-		if (tdb_ret != 0) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR,
-				  "Failed to delete %*.*s "
-				  "for rekey as %*.*s: %s",
-				  (int)key.dsize, (int)key.dsize,
-				  (const char *)key.dptr,
-				  (int)key2.dsize, (int)key2.dsize,
-				  (const char *)key.dptr,
-				  tdb_errorstr(tdb));
-			ctx->error = ltdb_err_map(tdb_error(tdb));
-			return -1;
-		}
-		tdb_ret = tdb_store(tdb, key2, data, 0);
-		if (tdb_ret != 0) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR,
-				  "Failed to rekey %*.*s as %*.*s: %s",
-				  (int)key.dsize, (int)key.dsize,
-				  (const char *)key.dptr,
-				  (int)key2.dsize, (int)key2.dsize,
-				  (const char *)key.dptr,
-				  tdb_errorstr(tdb));
-			ctx->error = ltdb_err_map(tdb_error(tdb));
-			return -1;
-		}
+		ltdb->kv_ops->update_in_iterate(ltdb, key, key2, data, ctx);
 	}
 	talloc_free(key2.dptr);
 
@@ -2634,6 +2610,7 @@ int ltdb_reindex(struct ldb_module *module)
 
 	ctx.error = 0;
 	ctx.count = 0;
+	ctx.cursor = NULL;
 
 	/* now traverse adding any indexes for normal LDB records */
 	ret = ltdb->kv_ops->iterate_write(ltdb, re_index, &ctx);
