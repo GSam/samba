@@ -119,24 +119,23 @@ static MDB_txn *get_current_txn(struct lmdb_private *lmdb)
 	if (txn == NULL) {
 		/* TODO ret? */
 		int ret;
-		if (true) { /*lmdb->dirty_read == NULL) {*/
-			ret = mdb_txn_begin(lmdb->env, NULL, MDB_RDONLY, &lmdb->read_txn);
+		if (lmdb->dirty_read == NULL) {
+			ret = mdb_txn_begin(lmdb->env, NULL, MDB_RDONLY, &txn);
 			if (ret != 0) {
 				ldb_asprintf_errstring(lmdb->ldb,
 						       "%s failed: %s\n", __FUNCTION__,
 						       mdb_strerror(ret));
 			}
 		} else {
-			/*lmdb->read_txn = lmdb->dirty_read;
-			ret = mdb_txn_renew(lmdb->read_txn);
+			txn = lmdb->dirty_read;
+			ret = mdb_txn_renew(txn);
 			if (ret != 0) {
 				ldb_asprintf_errstring(lmdb->ldb,
 						       "%s failed: %s\n", __FUNCTION__,
 						       mdb_strerror(ret));
 			}
-			lmdb->dirty_read = NULL;*/
+			lmdb->dirty_read = NULL;
 		}
-		txn = lmdb->read_txn;
 	}
 	return txn;
 }
@@ -199,12 +198,12 @@ static int ltdb_tdb_exists(struct ltdb_private *ltdb, TDB_DATA key)
 
         lmdb->error = mdb_get(txn, dbi, &mdb_key, &mdb_data);
 	if (ltdb->read_lock_count == 0 && lmdb->read_txn != NULL) {
-		mdb_txn_commit(lmdb->read_txn);
-		lmdb->read_txn = NULL;
-		/* LOC 1 */
-		/*mdb_txn_reset(lmdb->read_txn);
-		lmdb->dirty_read = lmdb->read_txn;
+		/*mdb_txn_commit(lmdb->read_txn);
 		lmdb->read_txn = NULL;*/
+		/* LOC 1 */
+		mdb_txn_reset(lmdb->read_txn);
+		lmdb->dirty_read = lmdb->read_txn;
+		lmdb->read_txn = NULL;
 	}
 	if (lmdb->error != 0) {
 		return 0;
@@ -276,11 +275,10 @@ static TDB_DATA ltdb_tdb_fetch(struct ltdb_private *ltdb, TDB_DATA key)
 
 		/* We created a read transaction, commit it */
 		if (ltdb->read_lock_count == 0 && lmdb->read_txn != NULL) {
-			/* TODO  LOC 2 */
-			mdb_txn_commit(lmdb->read_txn);
-			/*
+			/* TODO  LOC 2 
+			mdb_txn_commit(lmdb->read_txn); */
 			mdb_txn_reset(lmdb->read_txn);
-			lmdb->dirty_read = lmdb->read_txn;*/
+			lmdb->dirty_read = lmdb->read_txn;
 			lmdb->read_txn = NULL;
 		}
 		return result;
@@ -391,12 +389,12 @@ static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
 
 	/* We created a read transaction, commit it */
 	if (ltdb->read_lock_count == 0 && lmdb->read_txn != NULL) {
-		/*TODO LOC 3 */
+		/*TODO LOC 3 
 		mdb_txn_commit(lmdb->read_txn);
-		lmdb->read_txn = NULL;
-		/*mdb_txn_reset(lmdb->read_txn);
+		lmdb->read_txn = NULL; */
+		mdb_txn_reset(lmdb->read_txn);
 		lmdb->dirty_read = lmdb->read_txn;
-		lmdb->read_txn = NULL;*/
+		lmdb->read_txn = NULL;
 	}
 
 	if (lmdb->error != 0) {
@@ -432,14 +430,14 @@ static int ltdb_lock_read(struct ldb_module *module)
 		if (lmdb->dirty_read == NULL) {
 			ret = mdb_txn_begin(lmdb->env, NULL, MDB_RDONLY, &lmdb->read_txn);
 		} else {
-			/*lmdb->read_txn = lmdb->dirty_read;
+			lmdb->read_txn = lmdb->dirty_read;
 			ret = mdb_txn_renew(lmdb->read_txn);
 			if (ret != 0) {
 				ldb_asprintf_errstring(lmdb->ldb,
 						       "%s failed: %s\n", __FUNCTION__,
 						       mdb_strerror(ret));
 			}
-			lmdb->dirty_read = NULL;*/
+			lmdb->dirty_read = NULL;
 		}
 	}
 	if (ret == 0) {
@@ -461,10 +459,10 @@ static int ltdb_unlock_read(struct ldb_module *module)
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	if (ltdb->in_transaction == 0 && ltdb->read_lock_count == 1) {
 		struct lmdb_private *lmdb = ltdb->lmdb_private;
-		mdb_txn_commit(lmdb->read_txn);
+		/*mdb_txn_commit(lmdb->read_txn);*/
 		/* TODO CHECK RET */
-		/*mdb_txn_reset(lmdb->read_txn);
-		lmdb->dirty_read = lmdb->read_txn;*/
+		mdb_txn_reset(lmdb->read_txn);
+		lmdb->dirty_read = lmdb->read_txn;
 		lmdb->read_txn = NULL;
 		return 0;
 	}
@@ -631,7 +629,7 @@ static struct lmdb_private *lmdb_pvt_create(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-/*	mdb_env_set_maxreaders(lmdb->env, 100000);*/
+	mdb_env_set_maxreaders(lmdb->env, 150);
 	/* MDB_NOSUBDIR implies there is a separate file called path and a
 	 * separate lockfile called path-lock
 	 */
