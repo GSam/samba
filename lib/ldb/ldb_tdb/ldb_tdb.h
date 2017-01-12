@@ -10,7 +10,6 @@ struct kv_db_ops {
 	int (*store)(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags);
 	int (*delete)(struct ltdb_private *ltdb, TDB_DATA key);
 	int (*exists)(struct ltdb_private *ltdb, TDB_DATA key);
-	int (*iterate)(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx);
 	int (*iterate_write)(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx);
 	int (*update_in_iterate)(struct ltdb_private *ltdb, TDB_DATA key,
 				 TDB_DATA key2, TDB_DATA data, void *ctx);

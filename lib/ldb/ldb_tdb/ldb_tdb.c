@@ -1734,7 +1734,7 @@ static int ldb_tdb_traverse_fn_wrapper(struct tdb_context *tdb, TDB_DATA tdb_key
 		.length = tdb_data.dsize,
 		.data = tdb_data.dptr,
 	};
-	return kv_ctx->kv_traverse_fn(kv_ctx->ltdb, &key, &data, ctx);
+	return kv_ctx->kv_traverse_fn(kv_ctx->ltdb, &key, &data, kv_ctx->ctx);
 }
 
 static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx)
@@ -1744,16 +1744,10 @@ static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn
 		.ctx = ctx,
 		.ltdb = ltdb
 	};
-
-	return tdb_traverse(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
-}
-
-static int ltdb_tdb_iterate(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx)
-{
 	if (ltdb->in_transaction != 0) {
-		return tdb_traverse(ltdb->tdb, fn, ctx);
+		return tdb_traverse(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
 	} else {
-		return tdb_traverse_read(ltdb->tdb, fn, ctx);
+		return tdb_traverse_read(ltdb->tdb, ldb_tdb_traverse_fn_wrapper, &kv_ctx);
 	}
 }
 
@@ -1814,7 +1808,6 @@ static struct kv_db_ops key_value_ops = {
 	.store = ltdb_tdb_store,
 	.delete = ltdb_tdb_delete,
 	.exists = ltdb_tdb_exists,
-	.iterate = ltdb_tdb_iterate,
 	.iterate_write = ltdb_tdb_traverse_fn,
 	.update_in_iterate = ltdb_tdb_update_in_iterate,
 	.fetch = ltdb_tdb_fetch,
