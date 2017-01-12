@@ -790,8 +790,7 @@ int ltdb_search(struct ltdb_context *ctx)
 			ldb_asprintf_errstring(ldb, 
 					       "No such Base DN: %s", 
 					       ldb_dn_get_linearized(req->op.search.base));
-		}
-			
+		}			
 	} else {
 		/* If we are not checking the base DN life is easy */
 		ret = LDB_SUCCESS;

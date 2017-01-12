@@ -110,6 +110,10 @@ def configure(conf):
         if not sys.platform.startswith("openbsd"):
             conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
+    # if lmdb.h is present, build the mdb back end
+    if conf.CHECK_FUNCS_IN('mdb_env_create', 'lmdb', headers='lmdb.h'):
+        conf.env.ENABLE_MDB_BACKEND = True
+
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
 
     conf.SAMBA_CONFIG_H()
@@ -321,7 +325,7 @@ def build(bld):
                          init_function='ldb_mdb_init',
                          module_init_name='ldb_init_module',
                          internal_module=False,
-                         deps='ldb ldb_tdb',
+                         deps='lmdb ldb ldb_tdb',
                          subsystem='ldb')
 
         # have a separate subsystem for common/ldb.c, so it can rebuild

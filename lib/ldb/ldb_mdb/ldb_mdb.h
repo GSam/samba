@@ -40,6 +40,8 @@ struct lmdb_private {
 		unsigned seqnum;
 	} *meta;
 	int error;
+	MDB_txn *read_txn;
+
 };
 
 struct lmdb_trans {
