@@ -415,6 +415,10 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 
 static int ltdb_tdb_store(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags)
 {
+	if (key.dsize == 16) {
+		fprintf(stderr, "STORE: %s", (const char *)key.dptr);
+		exit(1);
+	}
 	return tdb_store(ltdb->tdb, key, data, flags);
 }
 
@@ -928,6 +932,9 @@ static int msg_delete_element(struct ldb_module *module,
 
 static TDB_DATA ltdb_tdb_fetch(struct ltdb_private *ltdb, TDB_DATA key)
 {
+	if (key.dsize == 16) {
+		fprintf(stderr, "FETCH: %s", (const char *)key.dptr);
+	}
 	return tdb_fetch(ltdb->tdb, key);
 }
 
