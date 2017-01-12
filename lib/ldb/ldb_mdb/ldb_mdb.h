@@ -41,6 +41,7 @@ struct lmdb_private {
 	} *meta;
 	int error;
 	MDB_txn *read_txn;
+	MDB_txn *dirty_read;
 
 };
 
