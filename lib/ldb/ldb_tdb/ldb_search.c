@@ -498,15 +498,11 @@ failed:
 /*
   search function for a non-indexed search
  */
-static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+static int search_func(struct ltdb_private *ltdb, struct ldb_val *key, struct ldb_val *val, void *state)
 {
 	struct ldb_context *ldb;
 	struct ltdb_context *ac;
 	struct ldb_message *msg, *filtered_msg;
-	const struct ldb_val val = {
-		.data = data.dptr,
-		.length = data.dsize,
-	};
 	int ret;
 	bool matched;
 	unsigned int nb_elements_in_db;
@@ -525,7 +521,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* unpack the record */
-	ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
+	ret = ldb_unpack_data_only_attr_list_flags(ldb, val,
 						   msg,
 						   NULL, 0,
 						   LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
@@ -539,7 +535,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 
 	if (!msg->dn) {
 		msg->dn = ldb_dn_new(msg, ldb,
-				     (char *)key.dptr + 3);
+				     (char *)key->data + 3);
 		if (msg->dn == NULL) {
 			talloc_free(msg);
 			ac->error = LDB_ERR_OPERATIONS_ERROR;
@@ -592,7 +588,7 @@ static int ltdb_search_full(struct ltdb_context *ctx)
 	int ret;
 
 	ctx->error = LDB_SUCCESS;
-	ret = ltdb->kv_ops->iterate(ltdb, search_func, ctx);
+	ret = ltdb->kv_ops->iterate_write(ltdb, search_func, ctx);
 
 	if (ret < 0) {
 		return LDB_ERR_OPERATIONS_ERROR;

@@ -2316,17 +2316,16 @@ int ltdb_index_delete(struct ldb_module *module, const struct ldb_message *msg)
   commit, which in turn greatly reduces DB churn as we will likely
   be able to do a direct update into the old record.
 */
-static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+static int delete_index(struct ltdb_private *ltdb, struct ldb_val *key, struct ldb_val *data, void *state)
 {
 	struct ldb_module *module = state;
-	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	const char *dnstr = "DN=" LTDB_INDEX ":";
 	struct dn_list list;
 	struct ldb_dn *dn;
 	struct ldb_val v;
 	int ret;
 
-	if (strncmp((char *)key.dptr, dnstr, strlen(dnstr)) != 0) {
+	if (strncmp((char *)key->data, dnstr, strlen(dnstr)) != 0) {
 		return 0;
 	}
 	/* we need to put a empty list in the internal tdb for this
@@ -2335,8 +2334,8 @@ static int delete_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, vo
 	list.count = 0;
 
 	/* the offset of 3 is to remove the DN= prefix. */
-	v.data = key.dptr + 3;
-	v.length = strnlen((char *)key.dptr, key.dsize) - 3;
+	v.data = key->data + 3;
+	v.length = strnlen((char *)key->data, key->length) - 3;
 
 	dn = ldb_dn_from_ldb_val(ltdb, ldb_module_get_ctx(module), &v);
 
@@ -2582,7 +2581,7 @@ int ltdb_reindex(struct ldb_module *module)
 	/* first traverse the database deleting any @INDEX records by
 	 * putting NULL entries in the in-memory tdb
 	 */
-	ret = ltdb->kv_ops->iterate(ltdb, delete_index, module);
+	ret = ltdb->kv_ops->iterate_write(ltdb, delete_index, module);
 	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "index deletion traverse failed: %s",
