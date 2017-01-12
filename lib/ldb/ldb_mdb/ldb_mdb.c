@@ -340,29 +340,6 @@ done:
 	return LDB_SUCCESS;
 }
 
-static int ltdb_tdb_iterate(struct ltdb_private *ltdb, tdb_traverse_func fn, void *ctx)
-{
-	/* TODO Create a lock read around the entire database */
-        if (ltdb->in_transaction != 0) {
-                //return ltdb_tdb_traverse_fn(ltdb, fn, ctx);
-		return 0;
-        } else {
-		/* TODO */
-		int ret;
-		struct lmdb_private *lmdb = ltdb->lmdb_private;
-		MDB_txn *txn = get_current_txn(lmdb);
-		/*mdb_txn_begin(READONLY);*/
-		ret = 0;
-                //ret = ltdb_tdb_traverse_fn(ltdb, fn, ctx);
-		/* We created a read transaction, commit it */
-		if (ltdb->read_lock_count == 0 && lmdb->read_txn != NULL) {
-			mdb_txn_commit(lmdb->read_txn);
-			lmdb->read_txn = NULL;
-		}
-		return ret;
-        }
-}
-
 /* Handles only a single record */
 static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
                                  int (*parser)(TDB_DATA key, TDB_DATA data,
