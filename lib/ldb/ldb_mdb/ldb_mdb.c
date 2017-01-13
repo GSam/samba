@@ -125,6 +125,7 @@ static MDB_txn *get_current_txn(struct lmdb_private *lmdb)
 					       "%s failed: %s\n", __FUNCTION__,
 					       mdb_strerror(ret));
 		}
+		lmdb->read_txn = txn;
 	}
 	return txn;
 }
@@ -428,6 +429,7 @@ static int ltdb_unlock_read(struct ldb_module *module)
 		struct lmdb_private *lmdb = ltdb->lmdb_private;
 		mdb_txn_commit(lmdb->read_txn);
 		lmdb->read_txn = NULL;
+		ltdb->read_lock_count--;
 		return 0;
 	}
 	ltdb->read_lock_count--;
