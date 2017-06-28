@@ -187,8 +187,9 @@ int ldapsrv_backend_Init(struct ldapsrv_connection *conn,
 				    conn->connection->event.ctx,
 				    conn->lp_ctx,
 				    conn->session_info,
-				    conn->global_catalog ? LDB_FLG_RDONLY : 0,
+				    (conn->global_catalog ? LDB_FLG_RDONLY : 0) | 2,
 				    "sam.ldb", &conn->ldb, errstring);
+	/* TODO testing LMDB flags */
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
