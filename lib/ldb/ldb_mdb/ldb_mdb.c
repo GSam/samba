@@ -566,7 +566,7 @@ static int lmdb_pvt_destructor(struct lmdb_private *lmdb)
 
 static struct lmdb_private *lmdb_pvt_create(TALLOC_CTX *mem_ctx,
 					    struct ldb_context *ldb,
-					    const char *path, unsigned int flags)
+					    const char *path)
 {
 	struct lmdb_private *lmdb;
 	int ret;
@@ -599,11 +599,7 @@ static struct lmdb_private *lmdb_pvt_create(TALLOC_CTX *mem_ctx,
 	/* MDB_NOSUBDIR implies there is a separate file called path and a
 	 * separate lockfile called path-lock
 	 */
-	if ((flags & 2) != 0) {
-		ret = mdb_env_open(lmdb->env, path, MDB_NOSUBDIR, 0644);
-	} else {
-		ret = mdb_env_open(lmdb->env, path, MDB_NOSUBDIR|MDB_NOTLS, 0644);
-	}
+	ret = mdb_env_open(lmdb->env, path, MDB_NOSUBDIR|MDB_NOTLS, 0644);
 	if (ret != 0) {
 		ldb_asprintf_errstring(ldb,
 				"Could not open DB %s: %s\n",
@@ -637,7 +633,7 @@ static int lmdb_connect(struct ldb_context *ldb, const char *url,
         }
 	ltdb->kv_ops = &lmdb_key_value_ops;
 
-	lmdb = lmdb_pvt_create(ldb, ldb, path, flags);
+	lmdb = lmdb_pvt_create(ldb, ldb, path);
 	if (lmdb == NULL) {
 		ldb_asprintf_errstring(ldb, "Failed to connect to %s with lmdb", path);
 		return LDB_ERR_OPERATIONS_ERROR;
