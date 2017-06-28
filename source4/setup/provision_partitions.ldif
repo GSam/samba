@@ -2,6 +2,5 @@ dn: @PARTITION
 replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
 replicateEntries: @OPTIONS
-backendStore: mdb
 ${LDAP_BACKEND_LINE}
 
