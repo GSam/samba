@@ -904,10 +904,23 @@ int dsdb_load_ldb_results_into_schema(TALLOC_CTX *mem_ctx, struct ldb_context *l
 				      char **error_string)
 {
 	unsigned int i;
+	WERROR status;
 
 	schema->ts_last_change = 0;
 	for (i=0; i < attrs_class_res->count; i++) {
-		WERROR status = dsdb_schema_set_el_from_ldb_msg(ldb, schema, attrs_class_res->msgs[i]);
+		const char *prefixMap = NULL;
+		/*
+		 * attrs_class_res also includes the schema object;
+		 * we only want to process classes & attributes
+		 */
+		prefixMap = ldb_msg_find_attr_as_string(
+				attrs_class_res->msgs[i],
+				"prefixMap", NULL);
+		if (prefixMap != NULL) {
+			continue;
+		}
+
+		status = dsdb_schema_set_el_from_ldb_msg(ldb, schema, attrs_class_res->msgs[i]);
 		if (!W_ERROR_IS_OK(status)) {
 			*error_string = talloc_asprintf(mem_ctx,
 				      "dsdb_load_ldb_results_into_schema: failed to load attribute or class definition: %s:%s",
