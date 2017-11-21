@@ -331,7 +331,7 @@ static int dsdb_schema_from_db(struct ldb_module *module,
 	if (schema_msg == NULL) {
 		ldb_asprintf_errstring(ldb,
 				       "dsdb_schema load failed: failed to find prefixMap");
-		res = LDB_ERR_NO_SUCH_ATTRIBUTE;
+		ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 		goto failed;
 	}
 
