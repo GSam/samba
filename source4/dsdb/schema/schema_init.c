@@ -904,11 +904,11 @@ int dsdb_load_ldb_results_into_schema(TALLOC_CTX *mem_ctx, struct ldb_context *l
 				      char **error_string)
 {
 	unsigned int i;
-	char *prefixMap;
 	WERROR status;
 
 	schema->ts_last_change = 0;
 	for (i=0; i < attrs_class_res->count; i++) {
+		const char *prefixMap = NULL;
 		/*
 		 * attrs_class_res also includes the schema object;
 		 * we only want to process classes & attributes
