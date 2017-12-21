@@ -135,7 +135,7 @@ static int ltdb_mdb_store(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	MDB_val mdb_key;
 	MDB_val mdb_data;
-	MDB_dbi mdb_dbi;
+	//MDB_dbi mdb_dbi;
 	int mdb_flags;
 	MDB_txn *txn = lmdb_trans_get_tx(lmdb_private_trans_head(lmdb));
 	MDB_dbi dbi = 0;
@@ -201,7 +201,7 @@ static int ltdb_tdb_delete(struct ltdb_private *ltdb, TDB_DATA key)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	MDB_val mdb_key;
-	MDB_val mdb_data;
+	//MDB_val mdb_data;
 	MDB_txn *txn = lmdb_trans_get_tx(lmdb_private_trans_head(lmdb));
 	MDB_dbi dbi = 0;
 
