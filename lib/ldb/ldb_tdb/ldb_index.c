@@ -2355,38 +2355,23 @@ static int delete_index(struct ltdb_private *ltdb, struct ldb_val *key, struct l
 	return 0;
 }
 
-struct ltdb_reindex_context {
-	struct ldb_module *module;
-	int error;
-	uint32_t count;
-	void *cursor;
-};
-
 /*
   traversal function that adds @INDEX records during a re index TODO wrong comment
 */
-static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+static int re_key(struct ltdb_private *ltdb, struct ldb_val *ldb_key, struct ldb_val *val, void *state)
 {
 	struct ldb_context *ldb;
 	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
 	struct ldb_message *msg;
 	unsigned int nb_elements_in_db;
-	const struct ldb_val val = {
-		.data = data.dptr,
-		.length = data.dsize,
-	};
 	int ret;
-	TDB_DATA key = {
-		.dptr = key_val->data,
-		.dsize = key_val->length,
-	};
-	TDB_DATA data = {
-		.dptr = val->data,
-		.dsize = val->length,
-	};
 	TDB_DATA key2;
 	bool is_record;
+	TDB_DATA key = {
+		.dptr = ldb_key->data,
+		.dsize = ldb_key->length
+	};
 	
 	ldb = ldb_module_get_ctx(module);
 
@@ -2441,6 +2426,10 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 	}
 	if (key.dsize != key2.dsize ||
 	    (memcmp(key.dptr, key2.dptr, key.dsize) != 0)) {
+		TDB_DATA data = {
+			.dptr = val->data,
+			.dsize = val->length
+		};
 		ltdb->kv_ops->update_in_iterate(ltdb, key, key2, data, ctx);
 	}
 	talloc_free(key2.dptr);
@@ -2460,18 +2449,16 @@ static int re_key(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *st
 /*
   traversal function that adds @INDEX records during a re index
 */
-static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+static int re_index(struct ltdb_private *ltdb, struct ldb_val *ldb_key, struct ldb_val *val, void *state)
 {
 	struct ldb_context *ldb;
 	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
-	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module),
-						    struct ltdb_private);
 	struct ldb_message *msg;
 	unsigned int nb_elements_in_db;
-	const struct ldb_val val = {
-		.data = data.dptr,
-		.length = data.dsize,
+	TDB_DATA key = {
+		.dptr = ldb_key->data,
+		.dsize = ldb_key->length
 	};
 	int ret;
 	bool is_record;
@@ -2493,7 +2480,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return -1;
 	}
 
-	ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
+	ret = ldb_unpack_data_only_attr_list_flags(ldb, val,
 						   msg,
 						   NULL, 0,
 						   LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC,
@@ -2593,7 +2580,7 @@ int ltdb_reindex(struct ldb_module *module)
 	ctx.error = 0;
 	ctx.count = 0;
 
-	ret = ltdb->kv_ops->iterate(ltdb, re_key, module);
+	ret = ltdb->kv_ops->iterate_write(ltdb, re_key, &ctx);
 	if (ret < 0) {
 		struct ldb_context *ldb = ldb_module_get_ctx(module);
 		ldb_asprintf_errstring(ldb, "key correction traverse failed: %s",
