@@ -254,7 +254,9 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 
 	ret = ltdb->kv_ops->fetch_and_parse(ltdb, tdb_key,
 					    ltdb_parse_data_unpack, &ctx);
-	talloc_free(tdb_key.dptr);
+	// TODO will this cause a memory leak ???
+	//      by commenting out the free
+	//      talloc_free(tdb_key.dptr);
 
 	if (ret == -1) {
 		ret = ltdb->kv_ops->error(ltdb);
@@ -506,11 +508,15 @@ static int search_func(struct ltdb_private *ltdb, struct ldb_val *key, struct ld
 	int ret;
 	bool matched;
 	unsigned int nb_elements_in_db;
+	TDB_DATA tdb_key = {
+		.dptr = key->data,
+		.dsize = key->length
+	};
 
 	ac = talloc_get_type(state, struct ltdb_context);
 	ldb = ldb_module_get_ctx(ac->module);
 
-	if (ltdb_key_is_record(key) == false) {
+	if (ltdb_key_is_record(tdb_key) == false) {
 		return 0;
 	}
 
@@ -771,7 +777,7 @@ int ltdb_search(struct ltdb_context *ctx)
 		 */
 		ret = ltdb_search_and_return_base(ltdb, ctx);
 
-		ltdb_unlock_read(module);
+		ltdb->kv_ops->unlock_read(module);
 
 		return ret;
 
