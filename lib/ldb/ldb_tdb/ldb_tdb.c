@@ -1751,10 +1751,16 @@ static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn
 	}
 }
 
-static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA key2, TDB_DATA data, void *ctx)
+static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA key2, TDB_DATA data, void *state)
 {
 	int tdb_ret;
-	tdb_ret = tdb_delete(tdb, key);
+	struct ldb_context *ldb;
+	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
+	struct ldb_module *module = ctx->module;
+
+	ldb = ldb_module_get_ctx(module);
+
+	tdb_ret = tdb_delete(ltdb->tdb, key);
 	if (tdb_ret != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Failed to delete %*.*s "
@@ -1763,11 +1769,11 @@ static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, T
 			  (const char *)key.dptr,
 			  (int)key2.dsize, (int)key2.dsize,
 			  (const char *)key.dptr,
-			  tdb_errorstr(tdb));
-		ctx->error = ltdb_err_map(tdb_error(tdb));
+			  tdb_errorstr(ltdb->tdb));
+		ctx->error = ltdb_err_map(tdb_error(ltdb->tdb));
 		return -1;
 	}
-	tdb_ret = tdb_store(tdb, key2, data, 0);
+	tdb_ret = tdb_store(ltdb->tdb, key2, data, 0);
 	if (tdb_ret != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Failed to rekey %*.*s as %*.*s: %s",
@@ -1775,8 +1781,8 @@ static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, T
 			  (const char *)key.dptr,
 			  (int)key2.dsize, (int)key2.dsize,
 			  (const char *)key.dptr,
-			  tdb_errorstr(tdb));
-		ctx->error = ltdb_err_map(tdb_error(tdb));
+			  tdb_errorstr(ltdb->tdb));
+		ctx->error = ltdb_err_map(tdb_error(ltdb->tdb));
 		return -1;
 	}
 	return tdb_ret;
