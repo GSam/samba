@@ -53,4 +53,6 @@ struct lmdb_trans {
 	MDB_txn *tx;
 };
 
+int ldb_mdb_err_map(int lmdb_err);
+
 #endif /* _LDB_MDB_H_ */
