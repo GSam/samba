@@ -85,6 +85,14 @@ struct ltdb_context {
 	int error;
 };
 
+struct ltdb_reindex_context {
+	struct ldb_module *module;
+	int error;
+	uint32_t count;
+	void *cursor;
+};
+
+
 /* special record types */
 #define LTDB_INDEX      "@INDEX"
 #define LTDB_INDEXLIST  "@INDEXLIST"
