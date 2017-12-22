@@ -1977,6 +1977,21 @@ static int ltdb_init_rootdse(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
+
+static int generic_lock_read(struct ldb_module *module)
+{
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	return ltdb->kv_ops->lock_read(module);
+}
+
+static int generic_unlock_read(struct ldb_module *module)
+{
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	return ltdb->kv_ops->unlock_read(module);
+}
+
 static const struct ldb_module_ops ltdb_ops = {
 	.name              = "tdb",
 	.init_context      = ltdb_init_rootdse,
@@ -1990,8 +2005,8 @@ static const struct ldb_module_ops ltdb_ops = {
 	.end_transaction   = ltdb_end_trans,
 	.prepare_commit    = ltdb_prepare_commit,
 	.del_transaction   = ltdb_del_trans,
-	.read_lock         = ltdb_lock_read,
-	.read_unlock       = ltdb_unlock_read,
+	.read_lock         = generic_lock_read,
+	.read_unlock       = generic_unlock_read,
 };
 
 int init_store(struct ltdb_private *ltdb,
