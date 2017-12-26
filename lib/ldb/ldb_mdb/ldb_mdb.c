@@ -44,7 +44,9 @@ int ldb_mdb_err_map(int lmdb_err)
 		return LDB_ERR_OPERATIONS_ERROR;
 	case MDB_BAD_TXN:
 	case MDB_BAD_VALSIZE:
+#ifdef MDB_BAD_DBI
 	case MDB_BAD_DBI:
+#endif
 	case MDB_PANIC:
 	case EINVAL:
 		return LDB_ERR_PROTOCOL_ERROR;
