@@ -643,6 +643,9 @@ static int lmdb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	ltdb->lmdb_private = lmdb;
+	if (flags & LDB_FLG_RDONLY) {
+		ltdb->read_only = true;
+	}
         return init_store(ltdb, "ldb_mdb backend", ldb, options, _module);
 }
 

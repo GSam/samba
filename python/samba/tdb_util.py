@@ -28,7 +28,7 @@ def tdb_copy(file1, file2):
     # Find the location of tdbbackup tool
     dirs = ["bin", samba.param.bin_dir()] + os.getenv('PATH').split(os.pathsep)
     for d in dirs:
-        toolpath = os.path.join(d, "tdbbackup")
+        toolpath = os.path.join(d, "ldbbackup")
         if os.path.exists(toolpath):
             break
 

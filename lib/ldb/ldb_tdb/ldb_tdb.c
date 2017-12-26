@@ -2120,11 +2120,6 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 		open_flags = O_CREAT | O_RDWR;
 	}
 
-	ltdb = talloc_zero(ldb, struct ltdb_private);
-	if (!ltdb) {
-		ldb_oom(ldb);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 	ltdb->kv_ops = &key_value_ops;
 
 	/* note that we use quite a large default hash size */
