@@ -359,6 +359,11 @@ def build(bld):
                          deps='ldb-cmdline ldb lmdb',
                          install=False)
 
+        bld.SAMBA_BINARY('ldbbackup',
+                         'tools/ldbbackup.c',
+                         deps='ldb-cmdline ldb lmdb',
+                         install=True)
+
         bld.SAMBA_LIBRARY('ldb-cmdline',
                           source='tools/ldbutil.c tools/cmdline.c',
                           deps='ldb dl popt',
