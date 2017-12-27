@@ -24,7 +24,7 @@
 
 #include "lmdb.h"
 #include "ldb_mdb.h"
-#include "lib/ldb/ldb_tdb/ldb_tdb.h"
+#include "../lib/ldb/ldb_tdb/ldb_tdb.h"
 #include "include/dlinklist.h"
 
 #define MDB_URL_PREFIX		"mdb://"
