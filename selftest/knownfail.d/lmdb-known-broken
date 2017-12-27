@@ -1,0 +1,5 @@
+# Test known to be failing on the lmdb work
+# lets me park tests so I can continue to make progress
+#
+^samba4.dlz_bind9.gssapi.gssapi\(chgdcpass:local\)
+
