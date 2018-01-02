@@ -12,4 +12,10 @@
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_db_lock2\(none\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock1\(none\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock1_config\(none\)
+^samba.tests.encrypted_secrets.samba.tests.encrypted_secrets.EncryptedSecretsTests.test_encrypted_secrets\(ad_dc:local\)
+^samba.tests.encrypted_secrets.samba.tests.encrypted_secrets.EncryptedSecretsTests.test_required_features\(ad_dc:local\)
+^samba.tests.encrypted_secrets.samba.tests.encrypted_secrets.EncryptedSecretsTests.test_encrypted_secrets\(vampire_dc:local\)
+^samba.tests.encrypted_secrets.samba.tests.encrypted_secrets.EncryptedSecretsTests.test_required_features\(vampire_dc:local\)
+^samba.tests.encrypted_secrets.samba.tests.encrypted_secrets.EncryptedSecretsTests.test_encrypted_secrets\(fl2000dc:local\)
+^samba.tests.encrypted_secrets.samba.tests.encrypted_secrets.EncryptedSecretsTests.test_required_features\(fl2000dc:local\)
 

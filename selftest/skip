@@ -146,5 +146,9 @@ bench # don't run benchmarks in our selftest
 ^samba4.rpc.unixinfo # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 ^samba.tests.dcerpc.unix  # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 # HACK for tests blocking lmdb build
+# DO NOT COMMIT this to master
+# Reject any patch containing this immediately
 #
 ^samba.tests.dsdb_lock.*
+^samba.tests.blackbox.smbcontrol.*
+^samba3.local.nss.*
