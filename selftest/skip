@@ -150,6 +150,6 @@ bench # don't run benchmarks in our selftest
 # Reject any patch containing this immediately
 #
 # ^samba.tests.dsdb_lock.*
-^samba.tests.blackbox.smbcontrol.*
-^samba3.local.nss.*
+# ^samba.tests.blackbox.smbcontrol.*
+# ^samba3.local.nss.*
 #^samba.tests.encrypted_secrets.*
