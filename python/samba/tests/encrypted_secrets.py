@@ -54,6 +54,8 @@ class EncryptedSecretsTests(TestCase):
         backend_subpath = os.path.join("sam.ldb.d",
                                        backend_filename)
         backend_path = self.lp.private_path(backend_subpath)
+        # TODO Need a real solution for this
+        backend_path = 'mdb://' + backend_path
         backenddb = ldb.Ldb(backend_path)
 
         dn = "CN=Administrator,CN=Users,%s" % basedn

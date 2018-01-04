@@ -152,4 +152,4 @@ bench # don't run benchmarks in our selftest
 ^samba.tests.dsdb_lock.*
 ^samba.tests.blackbox.smbcontrol.*
 ^samba3.local.nss.*
-^samba.tests.encrypted_secrets.*
+#^samba.tests.encrypted_secrets.*
