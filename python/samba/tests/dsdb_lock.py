@@ -230,7 +230,8 @@ class DsdbLockTestCase(SamDBTestCase):
             del(self.samdb)
             gc.collect()
 
-            backenddb = ldb.Ldb(backend_path)
+            # TODO need a real solution to the hardwired "mdb://"
+            backenddb = ldb.Ldb("mdb://" + backend_path)
 
 
             backenddb.transaction_start()
@@ -326,7 +327,8 @@ class DsdbLockTestCase(SamDBTestCase):
         # In the parent, close the main DB, re-open just one DB
         del(self.samdb)
         gc.collect()
-        backenddb = ldb.Ldb(backend_path)
+        # TODO need a real solution to the hardwired "mdb://"
+        backenddb = ldb.Ldb("mdb://" + backend_path)
 
         # We can start the transaction during the search
         # because both just grab the all-record read lock.
