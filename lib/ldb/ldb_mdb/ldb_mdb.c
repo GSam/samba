@@ -344,6 +344,37 @@ done:
 	return LDB_SUCCESS;
 }
 
+static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA key2, TDB_DATA data, void *state)
+{
+	struct lmdb_private *lmdb = ltdb->lmdb_private;
+
+	lmdb->error = ltdb_tdb_delete(ltdb, key);
+	if (lmdb->error != 0) {
+		ldb_debug(lmdb->ldb, LDB_DEBUG_ERROR,
+			  "Failed to delete %*.*s "
+			  "for rekey as %*.*s: %s",
+			  (int)key.dsize, (int)key.dsize,
+			  (const char *)key.dptr,
+			  (int)key2.dsize, (int)key2.dsize,
+			  (const char *)key.dptr,
+			  mdb_strerror(lmdb->error));
+		// TODO store the error
+		return -1;
+	}
+	lmdb->error = ltdb_mdb_store(ltdb, key2, data, 0);
+	if (lmdb->error != 0) {
+		ldb_debug(lmdb->ldb, LDB_DEBUG_ERROR,
+			  "Failed to rekey %*.*s as %*.*s: %s",
+			  (int)key.dsize, (int)key.dsize,
+			  (const char *)key.dptr,
+			  (int)key2.dsize, (int)key2.dsize,
+			  (const char *)key.dptr,
+			  mdb_strerror(lmdb->error));
+		// TODO Store the error
+		return -1;
+	}
+	return 0;
+}
 /* Handles only a single record */
 static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
                                  int (*parser)(TDB_DATA key, TDB_DATA data,
@@ -529,8 +560,8 @@ static struct kv_db_ops lmdb_key_value_ops = {
 	.store = ltdb_mdb_store,
 	.delete = ltdb_tdb_delete,
 	.exists = ltdb_tdb_exists,
-	//.iterate = ltdb_tdb_iterate,
 	.iterate_write = ltdb_tdb_traverse_fn,
+	.update_in_iterate = ltdb_tdb_update_in_iterate,
 	.fetch = ltdb_tdb_fetch,
 	.fetch_and_parse = ltdb_tdb_parse_record,
 	.lock_read = ltdb_lock_read,
