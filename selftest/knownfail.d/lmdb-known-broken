@@ -1,13 +1,6 @@
 # Test known to be failing on the lmdb work
 # lets me park tests so I can continue to make progress
 #
-^samba4.dlz_bind9.gssapi.gssapi\(chgdcpass:local\)
-^samba4.dlz_bind9.configure.configure\(chgdcpass:local\)
-^samba4.dlz_bind9.spnego.spnego\(chgdcpass:local\)
-^samba4.dlz_bind9.lookup.lookup\(chgdcpass:local\)
-^samba4.dlz_bind9.update01.update01\(chgdcpass:local\)
-^samba4.dlz_bind9.create.create\(chgdcpass:local\)
-^samba4.dlz_bind9.zonedump.zonedump\(chgdcpass:local\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_db_lock1\(none\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock1\(none\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock1_config\(none\)

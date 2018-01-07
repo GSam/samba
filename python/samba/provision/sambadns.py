@@ -800,7 +800,8 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
         file(domainpart_file, 'w').close()
 
         # Fill the basedn and @OPTION records in domain partition
-        dom_ldb = samba.Ldb(domainpart_file)
+        # TODO fix this 
+        dom_ldb = samba.Ldb("mdb://" + domainpart_file)
         domainguid_line = "objectGUID: %s\n-" % domainguid
         descr = b64encode(get_domain_descriptor(domainsid))
         setup_add_ldif(dom_ldb, setup_path("provision_basedn.ldif"), {
