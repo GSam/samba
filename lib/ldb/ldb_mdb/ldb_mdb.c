@@ -39,9 +39,10 @@ int ldb_mdb_err_map(int lmdb_err)
 		return LDB_SUCCESS;
 	case MDB_INCOMPATIBLE:
 	case MDB_CORRUPTED:
-	case MDB_INVALID:
 	case EIO:
 		return LDB_ERR_OPERATIONS_ERROR;
+	case MDB_INVALID:
+		return LDB_ERR_UNAVAILABLE;
 	case MDB_BAD_TXN:
 	case MDB_BAD_VALSIZE:
 #ifdef MDB_BAD_DBI
