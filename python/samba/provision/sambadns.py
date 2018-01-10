@@ -871,7 +871,6 @@ def create_samdb_copy(samdb,
             pfile = partfile[nc]
             tdb_copy(os.path.join(private_dir, pfile),
                      os.path.join(dns_dir, pfile))
-            print ">>>>>>>>>>>>> copied %s to %s" % (os.path.join(private_dir, pfile), os.path.join(dns_dir, pfile))
     except:
         logger.error(
             "Failed to setup database for BIND, AD based DNS cannot be used")
