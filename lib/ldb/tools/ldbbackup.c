@@ -569,7 +569,6 @@ static void usage(void)
 		} else {
 			if (file_newer(fname, bak_name) &&
 			    backup(fname, bak_name, hashsize, nolock) != 0) {
-				fprintf(stderr, ">>>>>>%s to %s\n", fname, bak_name);
 				ret = 1;
 			}
 		}
