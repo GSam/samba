@@ -777,7 +777,13 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
         os.system(rndc + " unfreeze " + lp.get("realm"))
 
 
-def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
+def create_samdb_copy(samdb,
+                      logger,
+                      paths,
+                      names,
+                      domainsid,
+                      domainguid,
+                      backend_store):
     """Create a copy of samdb and give write permissions to named for dns partitions
     """
     private_dir = paths.private_dir
@@ -793,6 +799,7 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
         partfile[nc.upper()] = fname
 
     # Create empty domain partition
+
     domaindn = names.domaindn.upper()
     domainpart_file = os.path.join(dns_dir, partfile[domaindn])
     try:
@@ -801,7 +808,9 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
 
         # Fill the basedn and @OPTION records in domain partition
         # TODO fix this
-        dom_ldb = samba.Ldb("mdb://" + domainpart_file)
+        backend_store = "mdb"
+        dom_url = "%s://%s" % (backend_store, domainpart_file)
+        dom_ldb = samba.Ldb(dom_url)
         domainguid_line = "objectGUID: %s\n-" % domainguid
         descr = b64encode(get_domain_descriptor(domainsid))
         setup_add_ldif(dom_ldb, setup_path("provision_basedn.ldif"), {
@@ -862,6 +871,7 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
             pfile = partfile[nc]
             tdb_copy(os.path.join(private_dir, pfile),
                      os.path.join(dns_dir, pfile))
+            print ">>>>>>>>>>>>> copied %s to %s" % (os.path.join(private_dir, pfile), os.path.join(dns_dir, pfile))
     except:
         logger.error(
             "Failed to setup database for BIND, AD based DNS cannot be used")
@@ -876,7 +886,7 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
                     os.chown(dpath, -1, paths.bind_gid)
                     os.chmod(dpath, 0770)
                 for f in files:
-                    if f.endswith('.ldb') or f.endswith('.tdb'):
+                    if f.endswith(('.ldb', '.tdb', 'ldb-lock')):
                         fpath = os.path.join(dirname, f)
                         os.chown(fpath, -1, paths.bind_gid)
                         os.chmod(fpath, 0660)
@@ -1070,7 +1080,7 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
 
 def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
         dns_backend, os_level, dnspass=None, hostip=None, hostip6=None,
-        targetdir=None, fill_level=FILL_FULL):
+        targetdir=None, fill_level=FILL_FULL, backend_store="mdb"):
     """Provision DNS information (assuming GC role)
 
     :param samdb: LDB object connected to sam.ldb file
@@ -1165,12 +1175,14 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
     if dns_backend.startswith("BIND9_"):
         setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
                         dns_backend, os_level, site=site, dnspass=dnspass, hostip=hostip,
-                        hostip6=hostip6, targetdir=targetdir)
+                        hostip6=hostip6, targetdir=targetdir,
+                        backend_store=backend_store)
 
 
 def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
         dns_backend, os_level, site=None, dnspass=None, hostip=None,
-        hostip6=None, targetdir=None, key_version_number=None):
+        hostip6=None, targetdir=None, key_version_number=None,
+        backend_store="mdb"):
     """Provision DNS information (assuming BIND9 backend in DC role)
 
     :param samdb: LDB object connected to sam.ldb file
@@ -1217,7 +1229,8 @@ def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
                          ntdsguid=names.ntdsguid)
 
     if dns_backend == "BIND9_DLZ" and os_level >= DS_DOMAIN_FUNCTION_2003:
-        create_samdb_copy(samdb, logger, paths, names, names.domainsid, domainguid)
+        create_samdb_copy(samdb, logger, paths,
+                          names, names.domainsid, domainguid, backend_store)
 
     create_named_conf(paths, realm=names.realm,
                       dnsdomain=names.dnsdomain, dns_backend=dns_backend,

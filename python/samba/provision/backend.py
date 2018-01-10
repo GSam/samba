@@ -145,7 +145,7 @@ class ExistingBackend(ProvisionBackend):
 
     def init(self):
         # Check to see that this 'existing' LDAP backend in fact exists
-        ldapi_db = Ldb(self.ldapi_uri)
+        ldapi_db = Ldb(self.ldapi_uri, flags=Ldb.FLG_DONT_CREATE_DB)
         ldapi_db.search(base="", scope=SCOPE_BASE,
             expression="(objectClass=OpenLDAProotDSE)")
 

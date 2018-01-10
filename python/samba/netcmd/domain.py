@@ -257,6 +257,9 @@ class cmd_domain_provision(Command):
          Option("--plaintext-secrets", action="store_true",
                 help="Store secret/sensitive values as plain text on disk" +
                      "(default is to encrypt secret/ensitive values)"),
+         Option("--backend-store", type="choice", metavar="BACKENDSTORE",
+                choices=["tdb", "mdb"],
+                help="Specify the database backend to be used TODO better words"),
         ]
 
     openldap_options = [
@@ -327,7 +330,8 @@ class cmd_domain_provision(Command):
             ldap_backend_forced_uri=None,
             ldap_dryrun_mode=None,
             base_schema=None,
-            plaintext_secrets=False):
+            plaintext_secrets=False,
+            backend_store="mdb"):
 
         self.logger = self.get_logger("provision")
         if quiet:
@@ -497,7 +501,8 @@ class cmd_domain_provision(Command):
                   ldap_backend_forced_uri=ldap_backend_forced_uri,
                   nosync=ldap_backend_nosync, ldap_dryrun_mode=ldap_dryrun_mode,
                   base_schema=base_schema,
-                  plaintext_secrets=plaintext_secrets)
+                  plaintext_secrets=plaintext_secrets,
+                  backend_store=backend_store)
 
         except ProvisioningError, e:
             raise CommandError("Provision failed", e)
