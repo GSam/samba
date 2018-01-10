@@ -599,26 +599,30 @@ static int lmdb_pvt_destructor(struct lmdb_private *lmdb)
 	return 0;
 }
 
-static struct lmdb_private *lmdb_pvt_create(TALLOC_CTX *mem_ctx,
-					    struct ldb_context *ldb,
-					    const char *path)
+static int lmdb_pvt_open(TALLOC_CTX *mem_ctx,
+				  struct ldb_context *ldb,
+				  const char *path,
+				  unsigned int flags,
+				  struct lmdb_private *lmdb)
 {
-	struct lmdb_private *lmdb;
 	int ret;
+	unsigned int mdb_flags;
 
-	lmdb = talloc_zero(ldb, struct lmdb_private);
-	if (lmdb == NULL) {
-		return NULL;
+	if (flags & LDB_FLG_DONT_CREATE_DB) {
+		struct stat st;
+		if (stat(path, &st) != 0) {
+			return LDB_ERR_UNAVAILABLE;
+		}
 	}
-	lmdb->ldb = ldb;
 
 	ret = mdb_env_create(&lmdb->env);
 	if (ret != 0) {
-		ldb_asprintf_errstring(ldb,
-				"Could not create MDB environment %s: %s\n",
-				path, mdb_strerror(ret));
-		talloc_free(lmdb);
-		return NULL;
+		ldb_asprintf_errstring(
+			ldb,
+			"Could not create MDB environment %s: %s\n",
+			path,
+			mdb_strerror(ret));
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* Close when lmdb is released */
@@ -626,34 +630,45 @@ static struct lmdb_private *lmdb_pvt_create(TALLOC_CTX *mem_ctx,
 
 	ret = mdb_env_set_mapsize(lmdb->env, 100 * MEGABYTE);
 	if (ret != 0) {
-		talloc_free(lmdb);
-		return NULL;
+		ldb_asprintf_errstring(
+			ldb,
+			"Could not open MDB environment %s: %s\n",
+			path,
+			mdb_strerror(ret));
+		return ldb_mdb_err_map(ret);
 	}
 
 	mdb_env_set_maxreaders(lmdb->env, 100000);
 	/* MDB_NOSUBDIR implies there is a separate file called path and a
 	 * separate lockfile called path-lock
 	 */
-	ret = mdb_env_open(lmdb->env, path, MDB_NOSUBDIR|MDB_NOTLS, 0644);
+	mdb_flags = MDB_NOSUBDIR|MDB_NOTLS;
+	if (flags & LDB_FLG_RDONLY) {
+		mdb_flags |= MDB_RDONLY;
+	}
+	ret = mdb_env_open(lmdb->env, path, mdb_flags, 0644);
 	if (ret != 0) {
 		ldb_asprintf_errstring(ldb,
 				"Could not open DB %s: %s\n",
 				path, mdb_strerror(ret));
 		talloc_free(lmdb);
-		return NULL;
+		return ldb_mdb_err_map(ret);
 	}
 
-	return lmdb;
+	return LDB_SUCCESS;
 
 }
 
-static int lmdb_connect(struct ldb_context *ldb, const char *url,
-			unsigned int flags, const char *options[],
-			struct ldb_module **_module)
+int lmdb_connect(struct ldb_context *ldb,
+		 const char *url,
+		 unsigned int flags,
+		 const char *options[],
+		 struct ldb_module **_module)
 {
 	const char *path = NULL;
 	struct lmdb_private *lmdb = NULL;
 	struct ltdb_private *ltdb = NULL;
+	int ret;
 
 	path = lmdb_get_path(url);
 	if (path == NULL) {
@@ -666,12 +681,19 @@ static int lmdb_connect(struct ldb_context *ldb, const char *url,
                 ldb_oom(ldb);
                 return LDB_ERR_OPERATIONS_ERROR;
         }
+
+	lmdb = talloc_zero(ldb, struct lmdb_private);
+	if (lmdb == NULL) {
+		TALLOC_FREE(ltdb);
+                ldb_oom(ldb);
+                return LDB_ERR_OPERATIONS_ERROR;
+	}
+	lmdb->ldb = ldb;
 	ltdb->kv_ops = &lmdb_key_value_ops;
 
-	lmdb = lmdb_pvt_create(ldb, ldb, path);
-	if (lmdb == NULL) {
-		ldb_asprintf_errstring(ldb, "Failed to connect to %s with lmdb", path);
-		return LDB_ERR_OPERATIONS_ERROR;
+	ret = lmdb_pvt_open(ldb, ldb, path, flags, lmdb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	ltdb->lmdb_private = lmdb;
@@ -681,10 +703,3 @@ static int lmdb_connect(struct ldb_context *ldb, const char *url,
         return init_store(ltdb, "ldb_mdb backend", ldb, options, _module);
 }
 
-
-
-int ldb_mdb_init(const char *version)
-{
-	LDB_MODULE_CHECK_VERSION(version);
-	return ldb_register_backend("mdb", lmdb_connect, false);
-}

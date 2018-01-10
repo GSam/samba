@@ -254,9 +254,6 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 
 	ret = ltdb->kv_ops->fetch_and_parse(ltdb, tdb_key,
 					    ltdb_parse_data_unpack, &ctx);
-	// TODO will this cause a memory leak ???
-	//      by commenting out the free
-	//      talloc_free(tdb_key.dptr);
 
 	if (ret == -1) {
 		ret = ltdb->kv_ops->error(ltdb);

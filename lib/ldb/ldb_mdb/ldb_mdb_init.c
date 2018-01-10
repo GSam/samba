@@ -1,7 +1,7 @@
 /*
-   ldb database library using mdb back end - transaction operations
+   ldb database library using mdb back end
 
-   Copyright (C) Jakub Hrozek 2015
+   Copyright (C) Jakub Hrozek 2014
    Copyright (C) Catalyst.Net Ltd 2017
 
      ** NOTE! The following LGPL license applies to the ldb
@@ -22,40 +22,10 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _LDB_MDB_H_
-#define _LDB_MDB_H_
+#include "ldb_mdb.h"
 
-#include <lmdb.h>
-
-#include "ldb_private.h"
-
-struct lmdb_private {
-	struct ldb_context *ldb; // Do we need this member to be visible??
-	MDB_env *env;
-
-	struct lmdb_trans *txlist;
-
-	struct ldb_mdb_metadata {
-		struct ldb_message *attributes;
-		unsigned seqnum;
-	} *meta;
-	int error;
-	MDB_txn *read_txn;
-
-};
-
-struct lmdb_trans {
-	struct lmdb_trans *next;
-	struct lmdb_trans *prev;
-
-	struct lmdb_private *lmdb;
-
-	MDB_txn *tx;
-};
-
-int ldb_mdb_err_map(int lmdb_err);
-int lmdb_connect(struct ldb_context *ldb, const char *url,
-		 unsigned int flags, const char *options[],
-		 struct ldb_module **_module);
-
-#endif /* _LDB_MDB_H_ */
+int ldb_mdb_init(const char *version)
+{
+	LDB_MODULE_CHECK_VERSION(version);
+	return ldb_register_backend("mdb", lmdb_connect, false);
+}
