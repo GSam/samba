@@ -190,7 +190,7 @@ static int dump_lmdb(const char *fname, struct ldb_dn *dn, bool emergency)
 		goto close_env;
 	}
 
-	ret = mdb_env_open(env, fname, MDB_NOSUBDIR|MDB_NOTLS, 0644);
+	ret = mdb_env_open(env, fname, MDB_NOSUBDIR|MDB_NOTLS|MDB_RDONLY, 0644);
 	if (ret != 0) {
 		fprintf(stderr,
 			"Could not open environment for %s: (%d)  %s\n",
