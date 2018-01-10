@@ -1540,6 +1540,8 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 	struct ldb_context *ldb;
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct ldb_seqnum_request *seq;
 	struct ldb_seqnum_result *res;
@@ -1558,7 +1560,7 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
-	if (ltdb_lock_read(module) != 0) {
+	if (ltdb->kv_ops->lock_read(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1620,7 +1622,8 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 
 done:
 	talloc_free(tmp_ctx);
-	ltdb_unlock_read(module);
+
+	ltdb->kv_ops->unlock_read(module);
 	return ret;
 }
 
@@ -2063,7 +2066,6 @@ int ltdb_connect(struct ldb_context *ldb, const char *url,
 	 * We hold locks, so we must use a private event context
 	 * on each returned handle
 	 */
-
 	ldb_set_require_private_event_context(ldb);
 
 	/* parse the url */
