@@ -533,8 +533,7 @@ if __name__ == '__main__':
         create_dns_dir(logger, paths)
 
         # Setup a copy of SAM for BIND9
-        create_samdb_copy(ldbs.sam, logger, paths, names, domainsid,
-                          domainguid)
+        create_samdb_copy(ldbs.sam, logger, paths, names, domainsid, domainguid)
 
         create_named_conf(paths, names.realm, dnsdomain, opts.dns_backend, logger)
 

@@ -777,13 +777,7 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
         os.system(rndc + " unfreeze " + lp.get("realm"))
 
 
-def create_samdb_copy(samdb,
-                      logger,
-                      paths,
-                      names,
-                      domainsid,
-                      domainguid,
-                      backend_store):
+def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
     """Create a copy of samdb and give write permissions to named for dns partitions
     """
     private_dir = paths.private_dir
@@ -793,10 +787,17 @@ def create_samdb_copy(samdb,
 
     # Find the partitions and corresponding filenames
     partfile = {}
-    res = samdb.search(base="@PARTITION", scope=ldb.SCOPE_BASE, attrs=["partition"])
+    res = samdb.search(base="@PARTITION",
+                       scope=ldb.SCOPE_BASE,
+                       attrs=["partition", "backendStore"])
     for tmp in res[0]["partition"]:
         (nc, fname) = tmp.split(':')
         partfile[nc.upper()] = fname
+
+    backend_store = "mdb"   # TODO need a more kosher way to default this
+                            #      add a method to SamDb/LDB ????????
+    if "backendStore" in res[0]:
+        backend_store = res[0]["backendStore"]
 
     # Create empty domain partition
 
@@ -807,8 +808,6 @@ def create_samdb_copy(samdb,
         file(domainpart_file, 'w').close()
 
         # Fill the basedn and @OPTION records in domain partition
-        # TODO fix this
-        backend_store = "mdb"
         dom_url = "%s://%s" % (backend_store, domainpart_file)
         dom_ldb = samba.Ldb(dom_url)
         domainguid_line = "objectGUID: %s\n-" % domainguid
@@ -1229,7 +1228,7 @@ def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
 
     if dns_backend == "BIND9_DLZ" and os_level >= DS_DOMAIN_FUNCTION_2003:
         create_samdb_copy(samdb, logger, paths,
-                          names, names.domainsid, domainguid, backend_store)
+                          names, names.domainsid, domainguid)
 
     create_named_conf(paths, realm=names.realm,
                       dnsdomain=names.dnsdomain, dns_backend=dns_backend,
