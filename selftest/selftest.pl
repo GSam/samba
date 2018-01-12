@@ -297,7 +297,7 @@ if (defined($ENV{TEST_LDAP}) and $ENV{TEST_LDAP} eq "yes") {
 	}
 }
 
-my $torture_maxtime = ($ENV{TORTURE_MAXTIME} or 1200);
+my $torture_maxtime = ($ENV{TORTURE_MAXTIME} or 1800);
 if ($ldap) {
 	# LDAP is slow
 	$torture_maxtime *= 2;
