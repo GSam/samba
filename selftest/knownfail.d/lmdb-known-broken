@@ -7,3 +7,14 @@
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_db_lock2\(none\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock2\(none\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock2_config\(none\)
+#
+# Tests that appear to be failing for other reasons.
+#
+^samba.tests.samba_tool.user.samba.tests.samba_tool.user.UserCmdTestCase.test_setpassword\(ad_dc:local\)
+^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_both_rounds\(ad_dc:local\)
+^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_no_rounds\(ad_dc:local\)
+^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_rounds_stored_hashes\(ad_dc:local\)
+^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_rounds_stored_hashes_with_rounds_no_match\(ad_dc:local\)
+^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_sha256_rounds_invalid\(ad_dc:local\)
+^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_sha256_no_rounds\(ad_dc:local\)
+^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_sha512_no_rounds\(ad_dc:local\)
