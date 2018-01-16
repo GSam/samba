@@ -10,7 +10,7 @@
 #
 # Tests that appear to be failing for other reasons.
 #
-^samba.tests.samba_tool.user.samba.tests.samba_tool.user.UserCmdTestCase.test_setpassword\(ad_dc:local\)
+#^samba.tests.samba_tool.user.samba.tests.samba_tool.user.UserCmdTestCase.test_setpassword\(ad_dc:local\)
 ^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_both_rounds\(ad_dc:local\)
 ^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_no_rounds\(ad_dc:local\)
 ^samba.tests.samba_tool.user_virtualCryptSHA.samba.tests.samba_tool.user_virtualCryptSHA.UserCmdCryptShaTestCase.test_gpg_both_hashes_rounds_stored_hashes\(ad_dc:local\)
