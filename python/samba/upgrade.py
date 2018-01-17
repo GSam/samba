@@ -784,7 +784,9 @@ Please fix this account before attempting to upgrade again
 
     logger.info("Adding users")
     # Start a new transaction (should speed this up a little, due to index churn)
-    result.samdb.transaction_start()
+    # TODO Need to resolve the issue around Multiple LDB's opend to the
+    #      same underlying database
+    # result.samdb.transaction_start()
 
     try:
         # Export users to samba4 backend
@@ -810,11 +812,15 @@ Please fix this account before attempting to upgrade again
 
     except:
         # We need this, so that we do not give even more errors due to not cancelling the transaction
-        result.samdb.transaction_cancel()
+        # TODO Need to resolve the issue around Multiple LDB's opend to the
+        #      same underlying database
+        # result.samdb.transaction_cancel()
         raise
 
     logger.info("Committing 'add users' transaction to disk")
-    result.samdb.transaction_commit()
+        # TODO Need to resolve the issue around Multiple LDB's opend to the
+        #      same underlying database
+    # result.samdb.transaction_commit()
 
     logger.info("Adding users to groups")
     # Start a new transaction (should speed this up a little, due to index churn)
