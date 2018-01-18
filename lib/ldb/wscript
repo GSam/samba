@@ -390,6 +390,12 @@ def build(bld):
                          deps='cmocka ldb',
                          install=False)
 
+        bld.SAMBA_BINARY('ldb_mdb_mod_op_test',
+                         source='tests/ldb_mod_op_test.c',
+                         cflags='-DTEST_BE=\"mdb\"',
+                         deps='cmocka ldb',
+                         install=False)
+
         bld.SAMBA_BINARY('ldb_msg_test',
                          source='tests/ldb_msg.c',
                          deps='cmocka ldb',
