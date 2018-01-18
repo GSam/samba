@@ -498,9 +498,6 @@ static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
 
 	ltx_head = lmdb_private_trans_head(lmdb);
 
-	if (ltx_head != NULL) {
-		samba_start_debugger();
-	}
 	tx_parent = lmdb_trans_get_tx(ltx_head);
 
 	lmdb->error = mdb_txn_begin(lmdb->env, tx_parent, 0, &ltx->tx);
