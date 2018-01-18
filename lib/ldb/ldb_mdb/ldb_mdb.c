@@ -96,13 +96,16 @@ static void trans_finished(struct lmdb_private *lmdb, struct lmdb_trans *ltx)
 	talloc_free(ltx);
 }
 
+/*
 static int ldb_mdb_trans_destructor(struct lmdb_trans *ltx)
 {
 	if (ltx != NULL && ltx->tx != NULL) {
 		mdb_txn_abort(ltx->tx);
+		ltx->tx = NULL;
 	}
 	return 0;
 }
+*/
 
 static struct lmdb_trans *lmdb_private_trans_head(struct lmdb_private *lmdb)
 {
@@ -139,7 +142,6 @@ static int ltdb_mdb_store(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	MDB_val mdb_key;
 	MDB_val mdb_data;
-	//MDB_dbi mdb_dbi;
 	int mdb_flags;
 	MDB_txn *txn = lmdb_trans_get_tx(lmdb_private_trans_head(lmdb));
 	MDB_dbi dbi = 0;
@@ -482,19 +484,23 @@ static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
 	if (ltx == NULL) {
 		return ldb_oom(lmdb->ldb);
 	}
-	talloc_set_destructor(ltx, ldb_mdb_trans_destructor);
 
+	// talloc_set_destructor(ltx, ldb_mdb_trans_destructor);
 	/*ltx->db_op = talloc_zero(ltx, struct lmdb_db_op);
 	if (ltx->db_op  == NULL) {
 		talloc_free(ltx);
 		return ldb_oom(lmdb->ldb);
 	}*/
 
-	ltx->lmdb = lmdb;
+	//ltx->lmdb = lmdb;
 	/*ltx->db_op->mdb_dbi = 0;
 	ltx->db_op->ltx = ltx;*/
 
 	ltx_head = lmdb_private_trans_head(lmdb);
+
+	if (ltx_head != NULL) {
+		samba_start_debugger();
+	}
 	tx_parent = lmdb_trans_get_tx(ltx_head);
 
 	lmdb->error = mdb_txn_begin(lmdb->env, tx_parent, 0, &ltx->tx);
@@ -595,7 +601,32 @@ static const char *lmdb_get_path(const char *url)
 
 static int lmdb_pvt_destructor(struct lmdb_private *lmdb)
 {
+	struct lmdb_trans *ltx = NULL;
+
+	/*
+	 * Close the read transaction if it's open
+	 */
+	if (lmdb->read_txn != NULL) {
+		mdb_txn_abort(lmdb->read_txn);
+	}
+
+	if (lmdb->env == NULL) {
+		return 0;
+	}
+
+	/*
+	 * Abort any currently active transactions
+	 */
+	ltx = lmdb_private_trans_head(lmdb);
+	while (ltx != NULL) {
+		mdb_txn_abort(ltx->tx);
+		trans_finished(lmdb, ltx);
+		ltx = lmdb_private_trans_head(lmdb);
+	}
+
 	mdb_env_close(lmdb->env);
+	lmdb->env = NULL;
+
 	return 0;
 }
 

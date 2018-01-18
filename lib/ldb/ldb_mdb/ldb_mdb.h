@@ -48,7 +48,7 @@ struct lmdb_trans {
 	struct lmdb_trans *next;
 	struct lmdb_trans *prev;
 
-	struct lmdb_private *lmdb;
+	//struct lmdb_private *lmdb;
 
 	MDB_txn *tx;
 };
