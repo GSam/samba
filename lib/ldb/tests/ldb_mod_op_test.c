@@ -478,9 +478,12 @@ static void test_ldb_handle(void **state)
 				   NULL);
 	assert_int_equal(ret, 0);
 
-	/* We are against ldb_tdb, so expect private event contexts */
-	assert_ptr_not_equal(ldb_handle_get_event_context(request->handle),
-			     ldb_get_event_context(test_ctx->ldb));
+	if (strcmp(TEST_BE, "tdb") == 0) {
+		/* We are against ldb_tdb, so expect private event contexts */
+		assert_ptr_not_equal(
+			ldb_handle_get_event_context(request->handle),
+			ldb_get_event_context(test_ctx->ldb));
+	}
 
 	ret = ldb_build_search_req(&request2, test_ctx->ldb, tmp_ctx,
 				   basedn, LDB_SCOPE_BASE,
