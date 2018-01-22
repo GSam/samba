@@ -326,14 +326,6 @@ static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn
 		/* TODO store error */
 		goto done;
 	}
-
-	/*mdb_key.mv_size = key.dsize;
-	mdb_key.mv_data = key.dptr;
-
-	while ((lmdb->error = mdb_cursor_get(cursor, &mdb_key,
-				     &mdb_val, MDB_NEXT)) == 0) {
-		fn(..., ..., ..., ...);
-	}*/
 done:
 	if (cursor != NULL) {
 		mdb_cursor_close(cursor);
@@ -350,6 +342,25 @@ done:
 static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA key2, TDB_DATA data, void *state)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
+	struct TDB_DATA copy;
+
+	/*
+	 * Need to take a copy of the data as the delete operation alters the
+	 * data, as it is in private lmdb memory.
+	 */
+	copy.dsize = data.dsize;
+	copy.dptr = talloc_memdup(ltdb, data.dptr, data.dsize);
+	if (copy.dptr == NULL) {
+		ldb_debug(lmdb->ldb, LDB_DEBUG_ERROR,
+			  "Unable to allocate memory for copy of data %*.*s "
+			  "for rekey as %*.*s",
+			  (int)key.dsize, (int)key.dsize,
+			  (const char *)key.dptr,
+			  (int)key2.dsize, (int)key2.dsize,
+			  (const char *)key.dptr);
+		// TODO store the error
+		goto done;
+	}
 
 	lmdb->error = ltdb_tdb_delete(ltdb, key);
 	if (lmdb->error != 0) {
@@ -362,9 +373,9 @@ static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, T
 			  (const char *)key.dptr,
 			  mdb_strerror(lmdb->error));
 		// TODO store the error
-		return -1;
+		goto done;
 	}
-	lmdb->error = ltdb_mdb_store(ltdb, key2, data, 0);
+	lmdb->error = ltdb_mdb_store(ltdb, key2, copy, 0);
 	if (lmdb->error != 0) {
 		ldb_debug(lmdb->ldb, LDB_DEBUG_ERROR,
 			  "Failed to rekey %*.*s as %*.*s: %s",
@@ -374,9 +385,25 @@ static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, T
 			  (const char *)key.dptr,
 			  mdb_strerror(lmdb->error));
 		// TODO Store the error
-		return -1;
+		goto done;
 	}
-	return 0;
+
+done:
+	if (copy.dptr != NULL) {
+		TALLOC_FREE(copy.dptr);
+		copy.dsize = 0;
+	}
+
+	/*
+	 * Explicity invalidate the data, as the delete has done this
+	 */
+	data.dsize = 0;
+	data.dptr = NULL;
+	if (lmdb->error != 0) {
+		return -1;
+	} else {
+		return 0;
+	}
 }
 /* Handles only a single record */
 static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
