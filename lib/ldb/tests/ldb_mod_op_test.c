@@ -3383,12 +3383,42 @@ static void test_ldb_talloc_destructor_transaction_cleanup(void **state)
 	 * Trigger the destructor
 	 */
 	TALLOC_FREE(test_ctx->ldb);
+
+	/*
+	 * Now ensure that a new connection can be opened
+	 */
+	{
+		TALLOC_CTX *tctx = talloc_new(test_ctx);
+		struct ldbtest_ctx *ctx = talloc_zero(tctx, struct ldbtest_ctx);
+		struct ldb_dn *basedn;
+		struct ldb_result *result = NULL;
+		int ret;
+
+		ldbtest_setup((void *)&ctx);
+
+		basedn = ldb_dn_new_fmt(tctx, ctx->ldb, "dc=test");
+		assert_non_null(basedn);
+
+		ret = ldb_search(ctx->ldb,
+				 tctx,
+				 &result,
+				 basedn,
+				 LDB_SCOPE_BASE,
+				 NULL,
+				 NULL);
+		assert_int_equal(ret, 0);
+		assert_non_null(result);
+		assert_int_equal(result->count, 0);
+
+		ldbtest_teardown((void *)&ctx);
+	}
 }
 
 
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
+#ifdef WIBBLE
 		cmocka_unit_test_setup_teardown(test_connect,
 						ldbtest_noconn_setup,
 						ldbtest_noconn_teardown),
@@ -3491,9 +3521,11 @@ int main(int argc, const char **argv)
 		cmocka_unit_test_setup_teardown(test_ldb_attrs_case_handler,
 						ldb_case_test_setup,
 						ldb_case_test_teardown),
+#endif
 		cmocka_unit_test_setup_teardown(test_ldb_attrs_index_handler,
 						ldb_case_test_setup,
 						ldb_case_attrs_index_test_teardown),
+#ifdef WIBBLE
 		cmocka_unit_test_setup_teardown(test_ldb_rename,
 						ldb_rename_test_setup,
 						ldb_rename_test_teardown),
@@ -3532,6 +3564,7 @@ int main(int argc, const char **argv)
 			test_ldb_talloc_destructor_transaction_cleanup,
 			ldbtest_setup,
 			ldbtest_teardown),
+#endif
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
