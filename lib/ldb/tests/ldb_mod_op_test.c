@@ -3421,7 +3421,6 @@ static void test_ldb_talloc_destructor_transaction_cleanup(void **state)
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
-#ifdef WIBBLE
 		cmocka_unit_test_setup_teardown(test_connect,
 						ldbtest_noconn_setup,
 						ldbtest_noconn_teardown),
@@ -3524,11 +3523,9 @@ int main(int argc, const char **argv)
 		cmocka_unit_test_setup_teardown(test_ldb_attrs_case_handler,
 						ldb_case_test_setup,
 						ldb_case_test_teardown),
-#endif
 		cmocka_unit_test_setup_teardown(test_ldb_attrs_index_handler,
 						ldb_case_test_setup,
 						ldb_case_attrs_index_test_teardown),
-#ifdef WIBBLE
 		cmocka_unit_test_setup_teardown(test_ldb_rename,
 						ldb_rename_test_setup,
 						ldb_rename_test_teardown),
@@ -3567,7 +3564,6 @@ int main(int argc, const char **argv)
 			test_ldb_talloc_destructor_transaction_cleanup,
 			ldbtest_setup,
 			ldbtest_teardown),
-#endif
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
