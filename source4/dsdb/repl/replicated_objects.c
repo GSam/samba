@@ -764,6 +764,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 
 		if (ra->identifier == NULL) {
 			talloc_free(out);
+			DBG_ERR("ra->identifier == NULL");
 			return WERR_BAD_NET_RESP;
 		}
 

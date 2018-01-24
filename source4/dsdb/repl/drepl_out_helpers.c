@@ -680,12 +680,14 @@ static void dreplsrv_op_pull_source_get_changes_done(struct tevent_req *subreq)
 		ctr_level = 6;
 		ctr6 = &r->out.ctr->ctr7.ctr.xpress6.ts->ctr6;
 	} else {
+		DBG_ERR("source_dsa_retry -- invalid level?");
 		status = werror_to_ntstatus(WERR_BAD_NET_RESP);
 		tevent_req_nterror(req, status);
 		return;
 	}
 
 	if (!ctr1 && !ctr6) {
+		DBG_ERR("source_dsa_retry -- !ctr1 && !ctr6)");
 		status = werror_to_ntstatus(WERR_BAD_NET_RESP);
 		tevent_req_nterror(req, status);
 		return;
@@ -757,6 +759,8 @@ static NTSTATUS dreplsrv_op_pull_retry_with_flags(struct tevent_req *req,
 			dreplsrv_op_pull_source_get_changes_trigger(req);
 		}
 	} else {
+		DBG_ERR("Unexpected error code %s\n", win_errstr(error_code));
+
 		nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
 	}
 
@@ -821,6 +825,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		more_data			= ctr6->more_data;
 		break;
 	default:
+		DBG_ERR("Unexpected counter level %d\n", ctr_level);
 		nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
 		tevent_req_nterror(req, nt_status);
 		return;
