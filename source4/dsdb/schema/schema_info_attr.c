@@ -210,6 +210,7 @@ WERROR dsdb_schema_info_cmp(const struct dsdb_schema *schema,
 		 */
 		werr = WERR_OK;
 	} else if (schema->schema_info->revision < schema_info->revision) {
+		DBG_ERR("llllllllllllllllllllllllllllllllllllllllll\n");
 		werr = WERR_DS_DRA_SCHEMA_MISMATCH;
 	} else if (!GUID_equal(&schema->schema_info->invocation_id,
 		   &schema_info->invocation_id))

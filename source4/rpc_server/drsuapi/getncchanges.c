@@ -213,6 +213,7 @@ fail:
 
 	sa = dsdb_attribute_by_attributeID_id(schema, remote_attid_as_enum);
 	if (sa == NULL) {
+		DBG_ERR("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
 		return WERR_DS_DRA_SCHEMA_MISMATCH;
 	} else {
 		if (local_attid_as_enum != NULL) {
