@@ -92,6 +92,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
 
         # make sure DCs are synchronized before the test
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
+        time.sleep(5)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
         # initialize objects prefix if not done yet
         if self.obj_prefix is None:
