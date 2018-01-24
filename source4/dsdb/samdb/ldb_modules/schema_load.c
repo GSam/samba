@@ -547,12 +547,6 @@ static int schema_load_start_transaction(struct ldb_module *module)
 		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *schema;
-	int ret;
-
-	ret = ldb_next_start_trans(module);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
 
 	/* Try the schema refresh now */
 	schema = dsdb_get_schema(ldb, NULL);
@@ -563,7 +557,7 @@ static int schema_load_start_transaction(struct ldb_module *module)
 	}
 	private_data->in_transaction = true;
 
-	return ret;
+	return ldb_next_start_trans(module);
 }
 
 static int schema_load_end_transaction(struct ldb_module *module)
