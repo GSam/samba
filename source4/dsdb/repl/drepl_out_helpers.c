@@ -917,6 +917,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 			tevent_req_nterror(req, nt_status);
 			return;
 		}
+		DBG_ERR("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr\n");
 
 		/*
 		 * Change info sync or extended operation into a fetch
@@ -945,7 +946,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 								ldb_dn_get_linearized(nc_root),
 								&p);
 			if (!W_ERROR_IS_OK(status)) {
-				DEBUG(2, ("Failed to find requested Naming Context for %s: %s",
+				DEBUG(0, ("Failed to find requested Naming Context for %s: %s",
 					  ldb_dn_get_linearized(nc_root),
 					  win_errstr(status)));
 				nt_status = werror_to_ntstatus(status);
@@ -958,7 +959,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 
 			if (!W_ERROR_IS_OK(status)) {
 				struct GUID_txt_buf str;
-				DEBUG(2, ("Failed to find requested source DSA for %s and %s: %s",
+				DEBUG(0, ("Failed to find requested source DSA for %s and %s: %s",
 					  ldb_dn_get_linearized(nc_root),
 					  GUID_buf_string(&state->op->source_dsa->repsFrom1->source_dsa_obj_guid, &str),
 					  win_errstr(status)));
@@ -974,7 +975,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 							ldb_dn_get_linearized(schema_dn),
 							&p);
 		if (!W_ERROR_IS_OK(status)) {
-			DEBUG(2, ("Failed to find requested Naming Context for schema: %s",
+			DEBUG(0, ("Failed to find requested Naming Context for schema: %s",
 				  win_errstr(status)));
 			nt_status = werror_to_ntstatus(status);
 			tevent_req_nterror(req, nt_status);
@@ -986,7 +987,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 							       &state->op->source_dsa);
 		if (!W_ERROR_IS_OK(status)) {
 			struct GUID_txt_buf str;
-			DEBUG(2, ("Failed to find requested source DSA for %s and %s: %s",
+			DEBUG(0, ("Failed to find requested source DSA for %s and %s: %s",
 				  ldb_dn_get_linearized(schema_dn),
 				  GUID_buf_string(&state->op->source_dsa->repsFrom1->source_dsa_obj_guid, &str),
 				  win_errstr(status)));
@@ -994,7 +995,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 			tevent_req_nterror(req, nt_status);
 			return;
 		}
-		DEBUG(4,("Wrong schema when applying reply GetNCChanges, retrying\n"));
+		DEBUG(0,("Wrong schema when applying reply GetNCChanges, retrying\n"));
 
 		state->retry_started = true;
 		dreplsrv_op_pull_source_get_changes_trigger(req);
