@@ -322,6 +322,17 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 		return WERR_INTERNAL_ERROR;
 	}
 
+
+	/* wrap the extended operation in a transaction 
+	   See [MS-DRSR] 3.3.2 Transactions
+  */
+	ret = ldb_transaction_start(s->ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ " Failed to start transaction: %s\n",
+             ldb_errstring(s->ldb)));
+		return WERR_FOOBAR;
+	}
+
 	schema_ldb = provision_get_schema(s, s->lp_ctx,
 					  c->forest->schema_dn_str,
 					  &s->prefixmap_blob);
@@ -334,6 +345,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 		ret = dsdb_reference_schema(s->ldb, provision_schema, SCHEMA_MEMORY_ONLY);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,("Failed to attach schema from local provision using remote prefixMap."));
+      ldb_transaction_cancel(s->ldb);
 			return WERR_INTERNAL_ERROR;
 		}
 		talloc_free(schema_ldb);
@@ -356,6 +368,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0, ("%s: dsdb_repl_resolve_working_schema() failed: %s",
 			  __location__, win_errstr(status)));
+    ldb_transaction_cancel(s->ldb);
 		return status;
 	}
 
@@ -371,6 +384,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 	ret = dsdb_set_schema(s->ldb, s->self_made_schema, SCHEMA_WRITE);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to attach working schema from DRS.\n"));
+    ldb_transaction_cancel(s->ldb);
 		return WERR_INTERNAL_ERROR;
 	}
 
@@ -381,6 +395,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 	partition_dn = ldb_dn_new(s, s->ldb, c->partition->nc.dn);
 	if (partition_dn == NULL) {
 		DEBUG(0,("Failed to parse partition DN from DRS.\n"));
+    ldb_transaction_cancel(s->ldb);
 		return WERR_INVALID_PARAMETER;
 	}
 
@@ -400,6 +415,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 						 s, &schema_objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects when trying to import over DRS (2nd pass, to store remote schema): %s\n", win_errstr(status)));
+    ldb_transaction_cancel(s->ldb);
 		return status;
 	}
 
@@ -729,10 +745,22 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 		nc_root = partition_dn;
 	}
 
+	/* wrap the extended operation in a transaction 
+	   See [MS-DRSR] 3.3.2 Transactions
+  */
+  {
+    int ret = ldb_transaction_start(s->ldb);
+    if (ret != LDB_SUCCESS) {
+      DEBUG(0,(__location__ " Failed to start transaction: %s\n",
+               ldb_errstring(s->ldb)));
+      return WERR_FOOBAR;
+    }
+  }
 
 	schema = dsdb_get_schema(s->ldb, NULL);
 	if (!schema) {
 		DEBUG(0,(__location__ ": Schema is not loaded yet!\n"));
+    ldb_transaction_cancel(s->ldb);
 		return WERR_INTERNAL_ERROR;
 	}
 
@@ -759,6 +787,7 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 						 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
+    ldb_transaction_cancel(s->ldb);
 		return status;
 	}
 
