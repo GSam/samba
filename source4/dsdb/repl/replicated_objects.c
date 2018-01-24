@@ -839,16 +839,6 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	/* wrap the extended operation in a transaction 
-	   See [MS-DRSR] 3.3.2 Transactions
-	 */
-	ret = ldb_transaction_start(ldb);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ " Failed to start transaction: %s\n",
-			 ldb_errstring(ldb)));
-		return WERR_FOOBAR;
-	}
-
 	ret = dsdb_load_partition_usn(ldb, objects->partition_dn, &seq_num1, NULL);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ " Failed to load partition uSN\n"));

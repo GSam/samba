@@ -831,9 +831,21 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		return;
 	}
 
+	/* wrap the extended operation in a transaction 
+	   See [MS-DRSR] 3.3.2 Transactions
+  */
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ " Failed to start transaction: %s\n",
+             ldb_errstring(ldb)));
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
 	schema = dsdb_get_schema(service->samdb, state);
 	if (!schema) {
 		DEBUG(0,(__location__ ": Schema is not loaded yet!\n"));
+    ldb_transaction_cancel(ldb);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
@@ -856,6 +868,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 			if (!W_ERROR_IS_OK(status)) {
 				DEBUG(0,("Failed to create working schema: %s\n",
 					 win_errstr(status)));
+        ldb_transaction_cancel(ldb);
 				tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 				return;
 			}
@@ -886,6 +899,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed to find nc_root for %s\n",
 				 ldb_dn_get_linearized(partition->dn)));
+      ldb_transaction_cancel(ldb);
 			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 			return;
 		}
@@ -914,6 +928,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 			nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
 			DEBUG(0,("Failed to convert objects after retry: %s/%s\n",
 				  win_errstr(status), nt_errstr(nt_status)));
+      ldb_transaction_cancel(ldb);
 			tevent_req_nterror(req, nt_status);
 			return;
 		}
@@ -950,6 +965,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 					  ldb_dn_get_linearized(nc_root),
 					  win_errstr(status)));
 				nt_status = werror_to_ntstatus(status);
+        ldb_transaction_cancel(ldb);
 				tevent_req_nterror(req, nt_status);
 				return;
 			}
@@ -964,6 +980,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 					  GUID_buf_string(&state->op->source_dsa->repsFrom1->source_dsa_obj_guid, &str),
 					  win_errstr(status)));
 				nt_status = werror_to_ntstatus(status);
+        ldb_transaction_cancel(ldb);
 				tevent_req_nterror(req, nt_status);
 				return;
 			}
@@ -978,6 +995,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 			DEBUG(0, ("Failed to find requested Naming Context for schema: %s",
 				  win_errstr(status)));
 			nt_status = werror_to_ntstatus(status);
+      ldb_transaction_cancel(ldb);
 			tevent_req_nterror(req, nt_status);
 			return;
 		}
@@ -992,6 +1010,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 				  GUID_buf_string(&state->op->source_dsa->repsFrom1->source_dsa_obj_guid, &str),
 				  win_errstr(status)));
 			nt_status = werror_to_ntstatus(status);
+      ldb_transaction_cancel(ldb);
 			tevent_req_nterror(req, nt_status);
 			return;
 		}
@@ -999,6 +1018,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 
 		state->retry_started = true;
 		dreplsrv_op_pull_source_get_changes_trigger(req);
+    ldb_transaction_cancel(ldb);
 		return;
 
 	} else if (!W_ERROR_IS_OK(status)) {
@@ -1006,6 +1026,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		DEBUG(0,("Failed to convert objects: %s/%s\n",
 			  win_errstr(status), nt_errstr(nt_status)));
 		tevent_req_nterror(req, nt_status);
+    ldb_transaction_cancel(ldb);
 		return;
 	}
 
