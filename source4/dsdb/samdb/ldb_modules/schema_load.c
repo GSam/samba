@@ -335,24 +335,6 @@ static int dsdb_schema_from_db(struct ldb_module *module,
 		goto failed;
 	}
 
-	/*
-	 * Separate the schema object from the attribute and
-	 * class objects.
-	 */
-	for (i = 0; i < res->count; i++) {
-		if (ldb_msg_find_element(res->msgs[i], "prefixMap")) {
-			schema_msg = res->msgs[i];
-			break;
-		}
-	}
-
-	if (schema_msg == NULL) {
-		ldb_asprintf_errstring(ldb,
-				       "dsdb_schema load failed: failed to find prefixMap");
-		ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
-		goto failed;
-	}
-
 	ret = dsdb_schema_from_ldb_results(tmp_ctx, ldb,
 					   schema_res, res, schema, &error_string);
 	if (ret != LDB_SUCCESS) {
