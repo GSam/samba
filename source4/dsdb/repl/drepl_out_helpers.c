@@ -932,7 +932,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 			tevent_req_nterror(req, nt_status);
 			return;
 		}
-		DBG_ERR("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr\n");
+		DBG_ERR("(%d) rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr\n", getpid());
 
 		/*
 		 * Change info sync or extended operation into a fetch
