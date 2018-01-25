@@ -357,10 +357,6 @@ int ldb_transaction_start(struct ldb_context *ldb)
 		  "start ldb transaction (nesting: %d)",
 		  ldb->transaction_active);
 
-	fprintf(stderr,
-		  "(%d) start ldb transaction (nesting: %d)\n",
-		  getpid(),
-		  ldb->transaction_active);
 	/* explicit transaction active, count nested requests */
 	if (ldb->transaction_active) {
 		ldb->transaction_active++;
@@ -470,10 +466,7 @@ int ldb_transaction_commit(struct ldb_context *ldb)
 	ldb_debug(ldb, LDB_DEBUG_TRACE,
 		  "commit ldb transaction (nesting: %d)",
 		  ldb->transaction_active);
-	fprintf(stderr,
-		  "(%d) commit ldb transaction (nesting: %d)\n",
-		  getpid(),
-		  ldb->transaction_active);
+
 	/* commit only when all nested transactions are complete */
 	if (ldb->transaction_active > 0) {
 		return LDB_SUCCESS;
@@ -522,10 +515,6 @@ int ldb_transaction_cancel(struct ldb_context *ldb)
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE,
 		  "cancel ldb transaction (nesting: %d)",
-		  ldb->transaction_active);
-	fprintf(stderr,
-		  "(%d) cancel ldb transaction (nesting: %d)\n",
-		  getpid(),
 		  ldb->transaction_active);
 
 	/* really cancel only if all nested transactions are complete */
