@@ -2315,7 +2315,7 @@ sub setup_vampire_dc($$$$)
 	my $env = $self->provision_vampire_dc($path, $dc_vars, $fl);
 
 	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "single"))) {
+	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
 
