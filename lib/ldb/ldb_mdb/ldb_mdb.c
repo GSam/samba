@@ -137,7 +137,9 @@ static MDB_txn *get_current_txn(struct lmdb_private *lmdb)
 	return txn;
 }
 
-static int ltdb_mdb_store(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags)
+static int lmdb_store(struct ltdb_private *ltdb,
+		      TDB_DATA key,
+		      TDB_DATA data, int flags)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	MDB_val mdb_key;
@@ -176,7 +178,7 @@ static int ltdb_mdb_store(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data
 	return lmdb->error;
 }
 
-static int ltdb_tdb_exists(struct ltdb_private *ltdb, TDB_DATA key)
+static int lmdb_exists(struct ltdb_private *ltdb, TDB_DATA key)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	MDB_val mdb_key;
@@ -203,7 +205,7 @@ static int ltdb_tdb_exists(struct ltdb_private *ltdb, TDB_DATA key)
 	return 1;
 }
 
-static int ltdb_tdb_delete(struct ltdb_private *ltdb, TDB_DATA key)
+static int lmdb_delete(struct ltdb_private *ltdb, TDB_DATA key)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	MDB_val mdb_key;
@@ -230,7 +232,7 @@ static int ltdb_tdb_delete(struct ltdb_private *ltdb, TDB_DATA key)
 	return lmdb->error;
 }
 
-static TDB_DATA ltdb_tdb_fetch(struct ltdb_private *ltdb, TDB_DATA key)
+static TDB_DATA lmdb_fetch(struct ltdb_private *ltdb, TDB_DATA key)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	MDB_val mdb_key;
@@ -274,7 +276,9 @@ static TDB_DATA ltdb_tdb_fetch(struct ltdb_private *ltdb, TDB_DATA key)
 	}
 }
 
-static int ltdb_tdb_traverse_fn(struct ltdb_private *ltdb, ldb_kv_traverse_fn fn, void *ctx)
+static int lmdb_traverse_fn(struct ltdb_private *ltdb,
+		            ldb_kv_traverse_fn fn,
+			    void *ctx)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	MDB_val mdb_key;
@@ -339,7 +343,11 @@ done:
 	return LDB_SUCCESS;
 }
 
-static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA key2, TDB_DATA data, void *state)
+static int lmdb_update_in_iterate(struct ltdb_private *ltdb,
+				  TDB_DATA key,
+				  TDB_DATA key2,
+				  TDB_DATA data,
+				  void *state)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	struct TDB_DATA copy;
@@ -362,7 +370,7 @@ static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, T
 		goto done;
 	}
 
-	lmdb->error = ltdb_tdb_delete(ltdb, key);
+	lmdb->error = lmdb_delete(ltdb, key);
 	if (lmdb->error != 0) {
 		ldb_debug(lmdb->ldb, LDB_DEBUG_ERROR,
 			  "Failed to delete %*.*s "
@@ -375,7 +383,7 @@ static int ltdb_tdb_update_in_iterate(struct ltdb_private *ltdb, TDB_DATA key, T
 		// TODO store the error
 		goto done;
 	}
-	lmdb->error = ltdb_mdb_store(ltdb, key2, copy, 0);
+	lmdb->error = lmdb_store(ltdb, key2, copy, 0);
 	if (lmdb->error != 0) {
 		ldb_debug(lmdb->ldb, LDB_DEBUG_ERROR,
 			  "Failed to rekey %*.*s as %*.*s: %s",
@@ -406,10 +414,10 @@ done:
 	}
 }
 /* Handles only a single record */
-static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
-                                 int (*parser)(TDB_DATA key, TDB_DATA data,
-                                               void *private_data),
-                                 void *ctx)
+static int lmdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
+			     int (*parser)(TDB_DATA key, TDB_DATA data,
+			     void *private_data),
+			     void *ctx)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	MDB_val mdb_key;
@@ -453,7 +461,7 @@ static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
 }
 
 
-static int ltdb_lock_read(struct ldb_module *module)
+static int lmdb_lock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -462,14 +470,6 @@ static int ltdb_lock_read(struct ldb_module *module)
 
 	if (ltdb->in_transaction == 0 &&
 	    ltdb->read_lock_count == 0) {
-		/*struct lmdb_trans *ltx = talloc_zero(lmdb, struct lmdb_trans);
-		if (ltx == NULL) {
-			return ldb_oom(lmdb->ldb);
-		}
-		talloc_set_destructor(ltx, ldb_mdb_trans_destructor);
-		ltx->lmdb = lmdb;*/
-
-		/* No existing transactions */
 		ret = mdb_txn_begin(lmdb->env, NULL, MDB_RDONLY, &lmdb->read_txn);
 	}
 	if (ret == 0) {
@@ -485,7 +485,7 @@ static int ltdb_lock_read(struct ldb_module *module)
 	return ret;
 }
 
-static int ltdb_unlock_read(struct ldb_module *module)
+static int lmdb_unlock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -500,7 +500,7 @@ static int ltdb_unlock_read(struct ldb_module *module)
 	return 0;
 }
 
-static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
+static int lmdb_transaction_start(struct ltdb_private *ltdb)
 {
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
 	struct lmdb_trans *ltx;
@@ -534,7 +534,7 @@ static int ltdb_tdb_transaction_start(struct ltdb_private *ltdb)
 	return lmdb->error;
 }
 
-static int ltdb_tdb_transaction_cancel(struct ltdb_private *ltdb)
+static int lmdb_transaction_cancel(struct ltdb_private *ltdb)
 {
 	struct lmdb_trans *ltx;
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
@@ -549,13 +549,13 @@ static int ltdb_tdb_transaction_cancel(struct ltdb_private *ltdb)
 	return LDB_SUCCESS;
 }
 
-static int ltdb_tdb_transaction_prepare_commit(struct ltdb_private *ltdb)
+static int lmdb_transaction_prepare_commit(struct ltdb_private *ltdb)
 {
 	/* No need to prepare a commit */
 	return LDB_SUCCESS;
 }
 
-static int ltdb_tdb_transaction_commit(struct ltdb_private *ltdb)
+static int lmdb_transaction_commit(struct ltdb_private *ltdb)
 {
 	struct lmdb_trans *ltx;
 	struct lmdb_private *lmdb = ltdb->lmdb_private;
@@ -576,34 +576,34 @@ static int lmdb_error(struct ltdb_private *ltdb)
 	return ldb_mdb_err_map(ltdb->lmdb_private->error);
 }
 
-static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
+static const char * lmdb_name(struct ltdb_private *ltdb)
 {
 	return "lmdb";
 }
 
-static bool ltdb_tdb_changed(struct ltdb_private *ltdb)
+static bool lmdb_changed(struct ltdb_private *ltdb)
 {
 	return true;
 }
 
 
 static struct kv_db_ops lmdb_key_value_ops = {
-	.store = ltdb_mdb_store,
-	.delete = ltdb_tdb_delete,
-	.exists = ltdb_tdb_exists,
-	.iterate_write = ltdb_tdb_traverse_fn,
-	.update_in_iterate = ltdb_tdb_update_in_iterate,
-	.fetch = ltdb_tdb_fetch,
-	.fetch_and_parse = ltdb_tdb_parse_record,
-	.lock_read = ltdb_lock_read,
-	.unlock_read = ltdb_unlock_read,
-	.begin_write = ltdb_tdb_transaction_start,
-	.prepare_write = ltdb_tdb_transaction_prepare_commit,
-	.finish_write = ltdb_tdb_transaction_commit,
-	.abort_write = ltdb_tdb_transaction_cancel,
-	.error = lmdb_error,
-	.name = ltdb_tdb_name,
-	.has_changed = ltdb_tdb_changed,
+	.store             = lmdb_store,
+	.delete            = lmdb_delete,
+	.exists            = lmdb_exists,
+	.iterate_write     = lmdb_traverse_fn,
+	.update_in_iterate = lmdb_update_in_iterate,
+	.fetch             = lmdb_fetch,
+	.fetch_and_parse   = lmdb_parse_record,
+	.lock_read         = lmdb_lock_read,
+	.unlock_read       = lmdb_unlock_read,
+	.begin_write       = lmdb_transaction_start,
+	.prepare_write     = lmdb_transaction_prepare_commit,
+	.finish_write      = lmdb_transaction_commit,
+	.abort_write       = lmdb_transaction_cancel,
+	.error             = lmdb_error,
+	.name              = lmdb_name,
+	.has_changed       = lmdb_changed,
 };
 
 static const char *lmdb_get_path(const char *url)
