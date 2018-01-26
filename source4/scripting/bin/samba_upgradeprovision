@@ -40,7 +40,7 @@ import samba.getopt as options
 from base64 import b64encode
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
-from samba import tdb_util
+from samba import ldb_util
 from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
                 MessageElement, Message, Dn, LdbError)
@@ -1315,7 +1315,7 @@ def simple_update_basesamdb(newpaths, paths, names):
     :param names: List of key provision parameters"""
 
     message(SIMPLE, "Copy samdb")
-    tdb_util.tdb_copy(newpaths.samdb, paths.samdb)
+    ldb_util.ldb_copy(newpaths.samdb, paths.samdb)
 
     message(SIMPLE, "Update partitions filename if needed")
     schemaldb = os.path.join(paths.private_dir, "schema.ldb")
@@ -1327,15 +1327,15 @@ def simple_update_basesamdb(newpaths, paths, names):
         os.mkdir(samldbdir)
         os.chmod(samldbdir, 0700)
     if os.path.isfile(schemaldb):
-        tdb_util.tdb_copy(schemaldb, os.path.join(samldbdir,
+        ldb_util.ldb_copy(schemaldb, os.path.join(samldbdir,
                                             "%s.ldb"%str(names.schemadn).upper()))
         os.remove(schemaldb)
     if os.path.isfile(usersldb):
-        tdb_util.tdb_copy(usersldb, os.path.join(samldbdir,
+        ldb_util.ldb_copy(usersldb, os.path.join(samldbdir,
                                             "%s.ldb"%str(names.rootdn).upper()))
         os.remove(usersldb)
     if os.path.isfile(configldb):
-        tdb_util.tdb_copy(configldb, os.path.join(samldbdir,
+        ldb_util.ldb_copy(configldb, os.path.join(samldbdir,
                                             "%s.ldb"%str(names.configdn).upper()))
         os.remove(configldb)
 
@@ -1376,12 +1376,12 @@ def backup_provision(paths, dir, only_db):
     """
     if paths.sysvol and not only_db:
         copytree_with_xattrs(paths.sysvol, os.path.join(dir, "sysvol"))
-    tdb_util.tdb_copy(paths.samdb, os.path.join(dir, os.path.basename(paths.samdb)))
-    tdb_util.tdb_copy(paths.secrets, os.path.join(dir, os.path.basename(paths.secrets)))
-    tdb_util.tdb_copy(paths.idmapdb, os.path.join(dir, os.path.basename(paths.idmapdb)))
-    tdb_util.tdb_copy(paths.privilege, os.path.join(dir, os.path.basename(paths.privilege)))
+    ldb_util.ldb_copy(paths.samdb, os.path.join(dir, os.path.basename(paths.samdb)))
+    ldb_util.ldb_copy(paths.secrets, os.path.join(dir, os.path.basename(paths.secrets)))
+    ldb_util.ldb_copy(paths.idmapdb, os.path.join(dir, os.path.basename(paths.idmapdb)))
+    ldb_util.ldb_copy(paths.privilege, os.path.join(dir, os.path.basename(paths.privilege)))
     if os.path.isfile(os.path.join(paths.private_dir,"eadb.tdb")):
-        tdb_util.tdb_copy(os.path.join(paths.private_dir,"eadb.tdb"), os.path.join(dir, "eadb.tdb"))
+        ldb_util.ldb_copy(os.path.join(paths.private_dir,"eadb.tdb"), os.path.join(dir, "eadb.tdb"))
     shutil.copy2(paths.smbconf, dir)
     shutil.copy2(os.path.join(paths.private_dir,"secrets.keytab"), dir)
 
@@ -1391,15 +1391,15 @@ def backup_provision(paths, dir, only_db):
         schemaldb = os.path.join(paths.private_dir, "schema.ldb")
         configldb = os.path.join(paths.private_dir, "configuration.ldb")
         usersldb = os.path.join(paths.private_dir, "users.ldb")
-        tdb_util.tdb_copy(schemaldb, os.path.join(dir, "schema.ldb"))
-        tdb_util.tdb_copy(usersldb, os.path.join(dir, "configuration.ldb"))
-        tdb_util.tdb_copy(configldb, os.path.join(dir, "users.ldb"))
+        ldb_util.ldb_copy(schemaldb, os.path.join(dir, "schema.ldb"))
+        ldb_util.ldb_copy(usersldb, os.path.join(dir, "configuration.ldb"))
+        ldb_util.ldb_copy(configldb, os.path.join(dir, "users.ldb"))
     else:
         os.mkdir(os.path.join(dir, "sam.ldb.d"), 0700)
 
         for ldb_name in os.listdir(samldbdir):
             if not ldb_name.endswith("-lock"):
-                tdb_util.tdb_copy(os.path.join(samldbdir, ldb_name),
+                ldb_util.ldb_copy(os.path.join(samldbdir, ldb_name),
                                   os.path.join(dir, "sam.ldb.d", ldb_name))
 
 

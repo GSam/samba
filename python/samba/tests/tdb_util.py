@@ -17,7 +17,7 @@
 
 import samba.tests
 from samba import ldb, Ldb
-from samba.tdb_util import tdb_copy
+from samba.ldb_util import ldb_copy
 import os
 
 
@@ -26,7 +26,7 @@ class TDBUtilTests(samba.tests.TestCaseInTempDir):
     def setUp(self):
         super(TDBUtilTests, self).setUp()
 
-    def test_tdb_copy(self):
+    def test_ldb_copy(self):
         src_ldb_file = os.path.join(self.tempdir, "source.ldb")
         dst_ldb_file = os.path.join(self.tempdir, "destination.ldb")
 
@@ -35,7 +35,7 @@ class TDBUtilTests(samba.tests.TestCaseInTempDir):
         src_ldb.add({"dn": "f=dc", "b": "bla"})
 
         # Copy source file to destination file and check return status
-        self.assertIsNone(tdb_copy(src_ldb_file, dst_ldb_file))
+        self.assertIsNone(ldb_copy(src_ldb_file, dst_ldb_file))
 
         # Load copied file as LDB object
         dst_ldb = Ldb(dst_ldb_file)

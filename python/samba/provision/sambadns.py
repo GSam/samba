@@ -28,7 +28,7 @@ import ldb
 from base64 import b64encode
 import subprocess
 import samba
-from samba.tdb_util import tdb_copy
+from samba.ldb_util import ldb_copy
 from samba.ndr import ndr_pack, ndr_unpack
 from samba import setup_file
 from samba.dcerpc import dnsp, misc, security
@@ -864,11 +864,11 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
     # Copy root, config, schema partitions (and any other if any)
     # Since samdb is open in the current process, copy them in a child process
     try:
-        tdb_copy(os.path.join(private_dir, "sam.ldb"),
+        ldb_copy(os.path.join(private_dir, "sam.ldb"),
                  os.path.join(dns_dir, "sam.ldb"))
         for nc in partfile:
             pfile = partfile[nc]
-            tdb_copy(os.path.join(private_dir, pfile),
+            ldb_copy(os.path.join(private_dir, pfile),
                      os.path.join(dns_dir, pfile))
     except:
         logger.error(
