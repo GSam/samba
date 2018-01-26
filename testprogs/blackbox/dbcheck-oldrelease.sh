@@ -41,7 +41,7 @@ undump() {
 
 add_userparameters0() {
        if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-	   $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb <<EOF
+	   $ldbmodify -H ldb://$PREFIX_ABS/${RELEASE}/private/sam.ldb <<EOF
 dn: cn=localdc,cn=domain controllers,dc=release-4-1-0rc3,dc=samba,dc=corp
 changetype: modify
 replace: userParameters
@@ -68,7 +68,7 @@ EOF
 }
 add_userparameters1() {
        if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-	   $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb <<EOF
+	   $ldbmodify -H ldb://$PREFIX_ABS/${RELEASE}/private/sam.ldb <<EOF
 dn: cn=administrator,cn=users,dc=release-4-1-0rc3,dc=samba,dc=corp
 changetype: modify
 replace: userParameters
@@ -95,7 +95,7 @@ EOF
 }
 add_userparameters2() {
        if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-	   $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb <<EOF
+	   $ldbmodify -H ldb://$PREFIX_ABS/${RELEASE}/private/sam.ldb <<EOF
 dn: cn=krbtgt,cn=users,dc=release-4-1-0rc3,dc=samba,dc=corp
 changetype: modify
 replace: userParameters
@@ -113,7 +113,7 @@ EOF
 
 add_userparameters3() {
        if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-	   $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb <<EOF
+	   $ldbmodify -H ldb://$PREFIX_ABS/${RELEASE}/private/sam.ldb <<EOF
 dn: cn=guest,cn=users,dc=release-4-1-0rc3,dc=samba,dc=corp
 changetype: modify
 replace: userParameters
@@ -143,7 +143,7 @@ EOF
 }
 
 reindex() {
-       $PYTHON $BINDIR/samba-tool dbcheck --reindex -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --reindex -H ldb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
 }
 
 do_current_version_mod() {
@@ -152,7 +152,7 @@ do_current_version_mod() {
 	# changing the attribute with current Samba fixes it, and that
 	# a fixed attriute isn't unfixed by dbcheck.
 	tmpldif=$release_dir/sudoers2-mod.ldif
-	$ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $tmpldif
+	$ldbmodify -H ldb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $tmpldif
     fi
     return 0
 }
@@ -160,13 +160,13 @@ do_current_version_mod() {
 check_expected_before_values() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-before-dbcheck.ldif.tmp
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
+	TZ=UTC $ldbsearch -H ldb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
 	diff $tmpldif $release_dir/expected-replpropertymetadata-before-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
 
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything2 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary | grep -v originating_change_time| grep -v whenChanged > $tmpldif
+	TZ=UTC $ldbsearch -H ldb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything2 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary | grep -v originating_change_time| grep -v whenChanged > $tmpldif
 
 	# Here we remove originating_change_time and whenChanged as
 	# these are time-dependent, caused by the ldbmodify above.
@@ -176,7 +176,7 @@ check_expected_before_values() {
 	    return 1
 	fi
 
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything3 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
+	TZ=UTC $ldbsearch -H ldb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything3 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
 	diff $tmpldif $release_dir/expected-replpropertymetadata-before-dbcheck3.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
