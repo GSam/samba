@@ -583,6 +583,13 @@ static const char * lmdb_name(struct ltdb_private *ltdb)
 
 static bool lmdb_changed(struct ltdb_private *ltdb)
 {
+	/*
+	 * lmdb does no provide a quick way to determine if the database
+	 * has changed.  This function always returns true.
+	 *
+	 * Note that tdb uses a sequence number that allows this function
+	 * to be implemented efficiently.
+	 */
 	return true;
 }
 
