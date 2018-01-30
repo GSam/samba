@@ -149,4 +149,4 @@ bench # don't run benchmarks in our selftest
 # DO NOT COMMIT this to master
 # Reject any patch containing this immediately
 #
-^samba4.drs.*
+#^samba4.drs.*
