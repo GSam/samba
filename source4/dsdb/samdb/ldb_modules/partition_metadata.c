@@ -316,14 +316,34 @@ int partition_metadata_init(struct ldb_module *module)
 		data->metadata = NULL;
 		goto end;
 	}
-
-	ret = partition_metadata_set_sequence_number(module);
+	
+	ret = partition_start_trans(module);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(data->metadata);
 		data->metadata = NULL;
 	}
-
-end:
+	
+	ret = partition_metadata_set_sequence_number(module);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(data->metadata);
+		data->metadata = NULL;
+		partition_del_trans(module);
+	} else {
+	
+		ret = partition_prepare_commit(module);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(data->metadata);
+			data->metadata = NULL;
+		} else {
+			ret = partition_end_trans(module);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(data->metadata);
+				data->metadata = NULL;
+			}
+		}
+	}
+	
+	end:
 	return ret;
 }
 
@@ -333,10 +353,28 @@ end:
  */
 int partition_metadata_sequence_number(struct ldb_module *module, uint64_t *value)
 {
-	return partition_metadata_get_uint64(module,
-					     LDB_METADATA_SEQ_NUM,
-					     value,
-					     0);
+
+	/* We have to lock all the databases as otherwise we can
+	 * return a sequence number that is higher than the DB values
+	 * that we can see, as those transactions close after the
+	 * metadata.tdb transaction closes */
+	int ret = partition_read_lock(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	
+	ret = partition_metadata_get_uint64(module,
+					    LDB_METADATA_SEQ_NUM,
+					    value,
+					    0);
+	if (ret == LDB_SUCCESS) {
+		ret = partition_read_unlock(module);
+	} else {
+		/* Don't overwrite the error code */
+		partition_read_unlock(module);
+	}
+	return ret;
+	
 }
 
 
