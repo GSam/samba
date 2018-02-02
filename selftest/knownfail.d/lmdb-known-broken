@@ -3,5 +3,6 @@
 #
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock1\(none\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock1_config\(none\)
+^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_db_lock2\(none\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock2\(none\)
 ^samba.tests.dsdb_lock.samba.tests.dsdb_lock.DsdbLockTestCase.test_full_db_lock2_config\(none\)
