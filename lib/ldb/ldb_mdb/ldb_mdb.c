@@ -690,7 +690,7 @@ static int lmdb_pvt_open(TALLOC_CTX *mem_ctx,
 	/* Close when lmdb is released */
 	talloc_set_destructor(lmdb, lmdb_pvt_destructor);
 
-	ret = mdb_env_set_mapsize(lmdb->env, 100 * MEGABYTE);
+	ret = mdb_env_set_mapsize(lmdb->env, 400 * MEGABYTE);
 	if (ret != 0) {
 		ldb_asprintf_errstring(
 			ldb,
