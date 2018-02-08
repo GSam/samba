@@ -75,6 +75,11 @@ int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 		return ret;
 	}
 
+        ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
+        if (ret != LDB_SUCCESS) {
+                return ret;
+        }
+
 	ret = ldb_request_add_control(req, LDB_CONTROL_REVEAL_INTERNALS, false, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
