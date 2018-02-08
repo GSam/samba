@@ -2617,7 +2617,7 @@ int ltdb_reindex(struct ldb_module *module)
 		ldb_debug(ldb_module_get_ctx(module),
 			  LDB_DEBUG_WARNING, "Reindexing: re_index successful on %s, "
 			  "final index write-out will be in transaction commit",
-			  tdb_name(ltdb->tdb));
+			  "");
 	}
 	return LDB_SUCCESS;
 }
