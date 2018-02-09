@@ -1182,6 +1182,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+		DEBUG(0, ("SEQUENCE NUMBER - CURRENT %d\n", (int)seq_number));
 		break;
 
 	case LDB_SEQ_HIGHEST_TIMESTAMP:
