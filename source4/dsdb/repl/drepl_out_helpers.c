@@ -1033,6 +1033,21 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 						working_schema,
 						objects,
 						&state->op->source_dsa->notify_uSN);
+
+	DEBUG(0, ("%d %s highest usn = %d\n", (int)getpid(), ldb_dn_get_linearized(partition->dn),(int)rf1.highwatermark.highest_usn));
+
+	if (uptodateness_vector != NULL) {
+
+	       int p;
+	       for (p = 0; p < uptodateness_vector->count; p++) {
+		       struct GUID_txt_buf str;
+		       GUID_buf_string(&state->op->source_dsa->repsFrom1->source_dsa_obj_guid, &str);
+		       DEBUG(0, ("%d %s highest udv = %d\n", (int)getpid(),
+			       GUID_buf_string(&state->op->source_dsa->repsFrom1->source_dsa_obj_guid, &str),
+			       (int)uptodateness_vector->cursors[p].highest_usn));
+	       }
+       }
+
 	talloc_free(objects);
 
 	if (!W_ERROR_IS_OK(status)) {
