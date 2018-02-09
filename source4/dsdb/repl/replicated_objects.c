@@ -1009,7 +1009,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		}
 	}
 
-	DEBUG(2,("Replicated %u objects (%u linked attributes) for %s\n",
+	DEBUG(0,("Replicated %u objects (%u linked attributes) for %s\n",
 		 objects->num_objects, objects->linked_attributes_count,
 		 ldb_dn_get_linearized(objects->partition_dn)));
 		 
