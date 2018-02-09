@@ -885,8 +885,10 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 			DEBUG(3,("Missing parent while attempting to apply records: %s\n",
 				 ldb_errstring(ldb)));
 		} else {
-			DEBUG(1,("Failed to apply records: %s: %s\n",
-				 ldb_errstring(ldb), ldb_strerror(ret)));
+			DEBUG(1,("%d: Failed to apply records: %s: %s\n",
+                               (int)getpid(), ldb_errstring(ldb), ldb_strerror(ret)));
+
+			
 		}
 		ldb_transaction_cancel(ldb);
 		TALLOC_FREE(tmp_ctx);
