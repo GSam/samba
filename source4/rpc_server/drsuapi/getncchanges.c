@@ -3150,6 +3150,8 @@ allowed:
 				       getnc_state->num_records);
 		W_ERROR_HAVE_NO_MEMORY(changes);
 
+		DEBUG(0, ("MIN USN %d GUID %s %s\n", (int)getnc_state->min_usn, GUID_string(getnc_state, &req10->destination_dsa_guid),  ldb_dn_get_linearized(getnc_state->ncRoot_dn) ));
+
 		for (i=0; i<getnc_state->num_records; i++) {
 			changes[i].dn = search_res->msgs[i]->dn;
 			changes[i].guid = samdb_result_guid(search_res->msgs[i], "objectGUID");
@@ -3158,6 +3160,8 @@ allowed:
 			if (changes[i].usn > getnc_state->max_usn) {
 				getnc_state->max_usn = changes[i].usn;
 			}
+			DEBUG(0, ("%d - %s USN %d\n", (int)getpid(), GUID_string(getnc_state, &changes[i].guid), (int)changes[i].usn));
+
 		}
 
 		/* RID_ALLOC returns 3 objects in a fixed order */
