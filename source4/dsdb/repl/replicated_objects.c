@@ -726,6 +726,11 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		 * should consider if it would like to replicate it
 		 * based on the cross-ref object.
 		 */
+		
+		DEBUG(0,("Converting object %s: %s\n",
+				 cur->object.identifier->dn,
+				 win_errstr(status)));
+
 		if (W_ERROR_EQUAL(status, WERR_DS_ADD_REPLICA_INHIBITED)) {
 			continue;
 		}
