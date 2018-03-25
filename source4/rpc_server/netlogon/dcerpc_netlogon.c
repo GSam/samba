@@ -2821,6 +2821,7 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 	const char *domain_name = NULL;
 	const char *pdc_ip;
 	bool different_domain = true;
+	bool forward_with_dns_name = false;
 
 	ZERO_STRUCTP(r->out.info);
 
@@ -2899,6 +2900,7 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 			if (strcasecmp_m(r->in.domain_name,
 					 lpcfg_sam_name(lp_ctx)) == 0) {
 				different_domain = false;
+				forward_with_dns_name = true;
 			}
 		} else if (r->in.flags & DS_IS_DNS_NAME) {
 			if (strcasecmp_m(r->in.domain_name,
@@ -2911,6 +2913,7 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 			    strcasecmp_m(r->in.domain_name,
 					 lpcfg_dnsdomain(lp_ctx)) == 0) {
 				different_domain = false;
+				forward_with_dns_name = true;
 			}
 		}
 	} else {
@@ -2919,6 +2922,7 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 		 * revert to our domain by default.
 		 */
 		different_domain = false;
+		forward_with_dns_name = true;
 	}
 
 	/* Proof server site parameter "site_name" if it was specified */
@@ -2930,6 +2934,7 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 
 		struct dcerpc_binding_handle *irpc_handle = NULL;
 		struct tevent_req *subreq = NULL;
+		uint32_t forward_flags = r->in.flags;
 
 		/*
 		 * Retrieve the client site to override the winbind response.
@@ -2961,6 +2966,15 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 		dcerpc_binding_handle_set_timeout(irpc_handle, 60);
 
 		dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+
+		domain_name = r->in.domain_name;
+
+		/* This only fixes the single domain case with NETBIOS names. */
+		if (forward_with_dns_name) {
+			forward_flags &= ~DS_IS_FLAT_NAME;
+			forward_flags |= DS_IS_DNS_NAME;
+			domain_name = lpcfg_dnsdomain(lp_ctx);
+		}
 
 		subreq = dcerpc_wbint_DsGetDcName_send(state,
 						       dce_call->event_ctx,
@@ -3069,6 +3083,12 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 	return WERR_OK;
 }
 
+/*
+ * TODO: We can still erroneously return ourselves across winbind when a
+ * (NETBIOS) domain sometimes does not exist. We may wish to pass down a flag
+ * to prevent that. This is partly mitigated by the site name check in this
+ * function, and because it preferably sends the DNS domain.
+ */
 static void dcesrv_netr_DsRGetDCName_base_done(struct tevent_req *subreq)
 {
 	struct dcesrv_netr_DsRGetDCName_base_state *state =
@@ -3120,6 +3140,11 @@ static void dcesrv_netr_DsRGetDCName_base_done(struct tevent_req *subreq)
 	 *
 	 * TODO: Currently this means that requests with NETBIOS domain
 	 * names can fail because they do not return the site name.
+	 * In the standard single domain case, the caller will pass
+	 * down the DNS domain instead (which perhaps should be
+	 * reverted to the NETBIOS name here).
+	 *
+	 * For trusted domains, changes to winbind will need to be made.
 	 */
 	if (state->r.in.site_name == NULL ||
 	    strcasecmp_m("", state->r.in.site_name) == 0 ||
