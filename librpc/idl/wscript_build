@@ -29,7 +29,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
-                    'preg.idl',
+                    'preg.idl aas.idl',
                     options='--header --ndr-parser --client --python',
                     output_dir='../gen_ndr')
 

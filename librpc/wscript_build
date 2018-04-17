@@ -423,6 +423,11 @@ bld.SAMBA_SUBSYSTEM('NDR_PREG',
     public_deps='ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_AAS',
+    source='gen_ndr/ndr_aas.c',
+    public_deps='ndr'
+    )
+
 bld.SAMBA_SUBSYSTEM('NDR_CAB',
     source='''
            gen_ndr/ndr_cab.c
@@ -720,7 +725,7 @@ bld.SAMBA_LIBRARY('ndr',
     public_deps='samba-errors talloc samba-util util_str_hex',
     public_headers='gen_ndr/misc.h gen_ndr/ndr_misc.h ndr/libndr.h:ndr.h',
     header_path= [('*gen_ndr*', 'gen_ndr')],
-    vnum='0.1.0',
+    vnum='0.1.1',
     abi_directory='ABI',
     abi_match='ndr_* GUID_*',
     )

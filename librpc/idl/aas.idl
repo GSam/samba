@@ -1,0 +1,142 @@
+#include "idl_types.h"
+
+import "misc.idl";
+
+/*
+   IDL structures defining PReg files
+
+   more info can be found at:
+   http://msdn2.microsoft.com/en-us/library/aa374407.aspx
+*/
+
+[
+	pointer_default(unique),
+	/*helper("../librpc/ndr/ndr_preg.h"),*/
+	helpstring("AAS structure"),
+	version(0.0),
+	uuid("02090040-4958-4f53-0000-00000000")
+]
+interface aas
+{
+	typedef [public] struct {
+		[value(9)] uint8 byte2;
+		uint16 arg1;
+		[value(1397708873)] int32 signature;
+		uint16 arg2;
+		int32 version;
+		uint16 arg3;
+		int32 timestamp;
+		uint16 arg4;
+		int32 langid;
+		uint16 arg5;
+		int32 platform;
+		uint16 arg6;
+		[value(3)] int32 script_type;
+		uint16 arg7;
+		[value(21)] int32 script_major_version;
+		uint16 arg8;
+		[value(4)] int32 script_minor_version;
+		uint16 arg9;
+		[value(0)] int32 script_attrs;
+	} aas_header;
+
+
+	typedef [nodiscriminant,public,flag(NDR_LITTLE_ENDIAN)] union {
+		[case(4)] uint32 extended_size;
+		[case(0)];
+	} aas_extended_size;
+
+	typedef [nodiscriminant,public,flag(NDR_LITTLE_ENDIAN)] union {
+		[case(0)];
+		[default] nstring string;
+	} aas_extended_string;
+
+	typedef [public] struct {
+		uint16 data;
+		[subcontext(0),subcontext_size(data == 0xC000 ? 4 : 0),flag(NDR_REMAINING),switch_is(data == 0xC000 ? 4 : 0)] aas_extended_size extended_size;
+		[subcontext(0),subcontext_size(data == 0xC000 ? (extended_size.extended_size << 2) >> 2 : 0),flag(NDR_REMAINING)] DATA_BLOB binary;
+		//[subcontext(0),switch_is((data & 0xC000) && (data & 0x3FFF) ? 4 : 0)] aas_extended_string unicode_string;
+		[subcontext(0),subcontext_size(data == 0xC000 ? 0 : (data & 0x3FFF)),flag(NDR_REMAINING)] DATA_BLOB string;
+		[subcontext(0),subcontext_size(data == 0x4000 ? 4 : 0),flag(NDR_REMAINING),switch_is(data == 0x4000 ? 4 : 0)] aas_extended_size number;
+	} aas_argument;
+
+
+	typedef [public] struct {
+		[value(16)] uint8 byte2;
+		aas_argument product_key;
+		aas_argument product_name;
+		aas_argument package_name;
+		aas_argument language;
+		aas_argument version;
+		aas_argument assignment;
+		aas_argument obsolete_arg;
+		aas_argument product_icon;
+		aas_argument package_media_path;
+		aas_argument package_code;
+		aas_argument null_arg1;
+		aas_argument null_arg2;
+		aas_argument instance_type;
+		aas_argument lua_setting;
+		aas_argument remote_urt_installs;
+		aas_argument product_deployment_flags;
+	} aas_product_info;
+
+	typedef [public] struct {
+		uint8 byte2;
+		aas_argument product_key[byte2];
+	} aas_generic_op;
+
+	/*	uint16 type;
+		[range(0, 16383)] length; */
+
+        typedef [public,enum8bit] enum {
+		AAS_OP_HEADER			= 2,
+		AAS_OP_PRODUCT_INFO 		= 4,
+		AAS_OP_SOURCE_LIST_PUBLISH 	= 9,
+		AAS_OP_PRODUCT_PUBLISH		= 16,
+		AAS_OP_END			= 3,
+		AAS_OP_DIALOG_INFO		= 5,
+		AAS_OP_USER_REGISTER 		= 18
+        } opcode_type;
+
+        typedef [nodiscriminant,public,flag(NDR_LITTLE_ENDIAN)] union {
+                [case(AAS_OP_HEADER)] aas_header header;
+                [case(AAS_OP_PRODUCT_INFO)] aas_product_info product_info;
+                [case(AAS_OP_SOURCE_LIST_PUBLISH)] aas_generic_op source_list;
+                [case(AAS_OP_PRODUCT_PUBLISH)] aas_generic_op dialog_list;
+		[case(AAS_OP_END)] aas_generic_op dialog_list;
+		[case(AAS_OP_DIALOG_INFO)] aas_generic_op dialog_list;
+		[case(AAS_OP_USER_REGISTER)] aas_generic_op dialog_list;
+                [default] aas_generic_op operation;
+        } aas_opcode;
+
+	typedef [public, flag(NDR_NOALIGN)] struct {
+		opcode_type type;
+		[switch_is(type)] aas_opcode opcode;
+	} aas_section;
+
+	typedef [public, flag(NDR_NOALIGN)] struct {
+		aas_section header;
+		//[flag(NDR_ALIGN2)] DATA_BLOB _padding1;
+		aas_section product_info;
+		//[flag(NDR_ALIGN2)] DATA_BLOB _padding2;
+		aas_section dialog_info;
+		//[flag(NDR_ALIGN2)] DATA_BLOB _padding3;
+		aas_section source_list;
+		//[flag(NDR_ALIGN2)] DATA_BLOB _padding4;
+		aas_section another;
+		//[flag(NDR_ALIGN2)] DATA_BLOB _padding5;
+		aas_section another2[28];
+		/*[flag(NDR_ALIGN2)] DATA_BLOB _padding1;
+		aas_product_info product_info;
+		[flag(NDR_ALIGN2)] DATA_BLOB _padding2;
+		aas_source_list source_list;
+		[flag(NDR_ALIGN2)] DATA_BLOB _padding3;
+		aas_product_publish product_publish;
+		[flag(NDR_ALIGN2)] DATA_BLOB _padding4;
+		aas_end end;
+		[flag(NDR_ALIGN2)] DATA_BLOB _padding5;*/
+	} aas_file;
+
+	[nopython] void decode_aas_file([in] aas_file file);
+}

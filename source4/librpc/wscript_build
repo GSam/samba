@@ -126,6 +126,7 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
                     NDR_CLUSAPI
                     NDR_WINSPOOL
                     NDR_CAB
+                    NDR_AAS
                     ''',
         depends_on='GEN_NDR_TABLES'
         )
