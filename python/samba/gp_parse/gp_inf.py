@@ -341,9 +341,6 @@ class GptTmplInfParser(GPParser):
         # contents = codecs.open(filename, encoding='utf-8').read()
         # self.load_xml(fromstring(contents))
 
-        # import pdb
-        # pdb.set_trace()
-
     def load_xml(self, root):
         self.sections = collections.OrderedDict([
             (u'Unicode', self.UnicodeParam()),
