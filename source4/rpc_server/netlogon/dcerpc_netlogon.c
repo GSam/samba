@@ -923,7 +923,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_check(struct dcesrv_call_state *dce_ca
 	switch (r->in.validation_level) {
 	case NetlogonValidationSamInfo4: /* 6 */
 		if (dce_call->conn->auth_state.auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
-			return NT_STATUS_INVALID_PARAMETER;
+			return NT_STATUS_DOWNGRADE_DETECTED;
 		}
 		break;
 
