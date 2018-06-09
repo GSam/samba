@@ -75,6 +75,11 @@ class GPAuditCsvParser(GPParser):
             for line in self.lines:
                 writer.writerow([line[x] for x in self.header])
 
+
+# The following classes come from the Python documentation
+# https://docs.python.org/3.0/library/csv.html
+
+
 class UTF8Recoder:
     """
     Iterator that reads an encoded stream and reencodes the input to UTF-8
