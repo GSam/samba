@@ -60,8 +60,6 @@ class GPPolParser(GPParser):
             if misc.REG_MULTI_SZ == entry_type:
                 values = [x.text for x in e.findall('Value')]
                 entry.data = (u'\x00'.join(values) + u'\x00\x00').encode('utf-16le')
-                #import pdb
-                #pdb.set_trace()
             elif (misc.REG_NONE == entry_type):
                 pass
             elif (misc.REG_SZ == entry_type or
@@ -80,9 +78,7 @@ class GPPolParser(GPParser):
             entries.append(entry)
 
         self.pol_file.entries = entries
-        #print self.pol_file.__ndr_print__()
-        # import pdb
-        # pdb.set_trace()
+        # print self.pol_file.__ndr_print__()
 
     def write_xml(self, filename):
         with file(filename, 'w') as f:
