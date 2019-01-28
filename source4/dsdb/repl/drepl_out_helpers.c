@@ -240,6 +240,12 @@ NTSTATUS dreplsrv_out_drsuapi_recv(struct tevent_req *req)
 	return NT_STATUS_OK;
 }
 
+struct schema_chunk_list {
+	struct schema_chunk_list *next, *prev;
+	const struct drsuapi_DsGetNCChangesCtr6 *ctr6;
+	/* TODO struct drsuapi_DsGetNCChanges *r -- do we need to free? */
+};
+
 struct dreplsrv_op_pull_source_state {
 	struct tevent_context *ev;
 	struct dreplsrv_out_operation *op;
@@ -251,6 +257,8 @@ struct dreplsrv_op_pull_source_state {
 	struct dreplsrv_partition_source_dsa *source_dsa_retry;
 	enum drsuapi_DsExtendedOperation extended_op_retry;
 	bool retry_started;
+
+	struct schema_chunk_list *schema_chunks;
 };
 
 static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq);
@@ -567,7 +575,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		r->in.req->req10.highwatermark		= highwatermark;
 		r->in.req->req10.uptodateness_vector	= uptodateness_vector;
 		r->in.req->req10.replica_flags		= replica_flags;
-		r->in.req->req10.max_object_count	= 133;
+		r->in.req->req10.max_object_count	= 1;
 		r->in.req->req10.max_ndr_size		= 1336811;
 		r->in.req->req10.extended_op		= state->op->extended_op;
 		r->in.req->req10.fsmo_info		= state->op->fsmo_info;
@@ -793,6 +801,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	NTSTATUS nt_status;
 	uint32_t dsdb_repl_flags = 0;
 	struct ldb_dn *nc_root = NULL;
+
 	int ret;
 
 	switch (ctr_level) {
@@ -840,19 +849,78 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	if (first_object) {
 		bool is_schema = ldb_dn_compare(partition->dn, schema_dn) == 0;
 		if (is_schema) {
-			/* create working schema to convert objects with */
-			status = dsdb_repl_make_working_schema(service->samdb,
-							       schema,
-							       mapping_ctr,
-							       object_count,
-							       first_object,
-							       &drsuapi->gensec_skey,
-							       state, &working_schema);
-			if (!W_ERROR_IS_OK(status)) {
-				DEBUG(0,("Failed to create working schema: %s\n",
-					 win_errstr(status)));
-				tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			struct schema_chunk_list *schema_chunk = NULL;
+
+			schema_chunk = talloc_zero(state,
+						   struct schema_chunk_list);
+			if (schema_chunk == NULL) {
+				/* TODO error */
+			}
+
+			schema_chunk->ctr6 = ctr6;
+			DLIST_ADD_END(state->schema_chunks, schema_chunk);
+
+			if (more_data) {
+				/* TODO comment: If GET_TGT or GET_ANC were set... */
+
+				/*
+				 * The highwatermark must be set to fool the
+				 * server into thinking we're progressing.
+				 */
+				*state->op->source_dsa->repsFrom1 = rf1;
+
+				dreplsrv_op_pull_source_get_changes_trigger(req);
 				return;
+			} else {
+				/* Create working schema to convert objects with */
+
+				struct drsuapi_DsReplicaObjectListItemEx *cur;
+
+				/* First combine all the schema chunks */
+				object_count = 0;
+				linked_attributes_count = 0;
+
+				first_object = state->schema_chunks->ctr6->first_object;
+
+				while (state->schema_chunks != NULL) {
+					uint32_t i;
+
+					schema_chunk = state->schema_chunks;
+					DLIST_REMOVE(state->schema_chunks, state->schema_chunks);
+
+					for (i = 0, cur = schema_chunk->ctr6->first_object;
+					     cur->next_object != NULL;
+					     cur = cur->next_object, i++) {
+						if (i == schema_chunk->ctr6->object_count - 1) {
+							DBG_ERR("Unexpected size of schema chunk: More objects than expected.\n");
+								tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+							tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+							return;
+						}
+					}
+
+					object_count += schema_chunk->ctr6->object_count;
+					linked_attributes_count += schema_chunk->ctr6->linked_attributes_count;
+
+					/* Point to next object in list if it exists */
+					if (state->schema_chunks != NULL) {
+						cur->next_object = state->schema_chunks->ctr6->first_object;
+					}
+				}
+
+				status = dsdb_repl_make_working_schema(service->samdb,
+								       schema,
+								       mapping_ctr,
+								       object_count,
+								       first_object,
+								       &drsuapi->gensec_skey,
+								       state, &working_schema);
+				if (!W_ERROR_IS_OK(status)) {
+					DEBUG(0,("Failed to create working schema: %s %d\n",
+						 win_errstr(status), (int)object_count));
+					tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+					return;
+				}
 			}
 		}
 	}
