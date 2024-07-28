@@ -2430,7 +2430,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.ldb_syntax             = LDB_SYNTAX_SAMBA_SID
 	},{
 		.name			= "String(Object-Identifier)",
-		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.38",
+		.ldap_oid		= LDB_SYNTAX_OBJECT_IDENTIFIER,
 		.oMSyntax		= 6,
 		.attributeSyntax_oid	= "2.5.5.2",
 		.drsuapi_to_ldb		= dsdb_syntax_OID_drsuapi_to_ldb,
@@ -2545,7 +2545,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.comment                = "Directory String",
 	},{
 		.name			= "Interval/LargeInteger",
-		.ldap_oid		= "1.2.840.113556.1.4.906",
+		.ldap_oid		= LDB_SYNTAX_LARGE_INTEGER,
 		.oMSyntax		= 65,
 		.attributeSyntax_oid	= "2.5.5.16",
 		.drsuapi_to_ldb		= dsdb_syntax_INT64_drsuapi_to_ldb,

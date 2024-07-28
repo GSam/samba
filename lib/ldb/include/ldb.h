@@ -526,6 +526,10 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
 
 #define LDB_SYNTAX_OBJECTCLASS          "LDB_SYNTAX_OBJECTCLASS"
 
+#define LDB_SYNTAX_LARGE_INTEGER "1.2.840.113556.1.4.906"
+
+#define LDB_SYNTAX_OBJECT_IDENTIFIER "1.3.6.1.4.1.1466.115.121.1.38"
+
 /* sorting helpers */
 typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 

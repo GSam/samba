@@ -268,7 +268,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		user_known = true;
 	}
 
-	server_type = DS_SERVER_DS;
+	server_type = DS_SERVER_DS | DS_SERVER_WEBSERV;
 
 	if (samdb_is_pdc(sam_ctx)) {
 		server_type |= DS_SERVER_PDC;
