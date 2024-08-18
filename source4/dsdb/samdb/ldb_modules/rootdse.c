@@ -491,6 +491,12 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 		}
 	}
 
+	if (do_attribute_explicit(attrs, "msDS-PortLDAP")) {
+		if (samdb_msg_add_uint(ldb, msg, msg, "msDS-PortLDAP", 389) != LDB_SUCCESS) {
+			goto failed;
+		}
+	}
+
 	if (ac->netlogon.length > 0) {
 		if (ldb_msg_add_steal_value(msg, "netlogon", &ac->netlogon) != LDB_SUCCESS) {
 			goto failed;
