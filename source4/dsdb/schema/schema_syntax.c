@@ -2507,7 +2507,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.auto_normalise		= true
 	},{
 		.name			= "String(Generalized-Time)",
-		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.24",
+		.ldap_oid		= LDB_SYNTAX_GENERALIZED_TIME,
 		.oMSyntax		= 24,
 		.attributeSyntax_oid	= "2.5.5.11",
 		.drsuapi_to_ldb		= dsdb_syntax_NTTIME_drsuapi_to_ldb,
