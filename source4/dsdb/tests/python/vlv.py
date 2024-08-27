@@ -1286,6 +1286,14 @@ class PagedResultsTests(TestsWithUserOU):
 
 class PagedResultsTestsRO(PagedResultsTests):
 
+    def test_paged_search_page_size_one(self):
+        expr = "(objectClass=*)"
+
+        first, cookie = self.paged_search(expr, page_size=1)
+        while cookie:
+            res, cookie = self.paged_search(expr, page_size=1, cookie=cookie)
+            self.assertNotEqual(len(res), 0)
+
     def test_paged_search_lockstep(self):
         expr = "(objectClass=*)"
         ps = 3

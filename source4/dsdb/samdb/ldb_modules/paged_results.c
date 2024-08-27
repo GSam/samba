@@ -354,7 +354,7 @@ static int paged_results(struct paged_context *ac, struct ldb_reply *ares)
 
 	ac->controls[i]->data = paged;
 
-	if (ac->size > 0) {
+	if (ac->size > 0 || ac->store->last_i == ac->store->num_entries) {
 		paged->size = 0;
 		paged->cookie = NULL;
 		paged->cookie_len = 0;
